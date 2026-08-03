@@ -5,10 +5,85 @@ const palette = {
   steelDark: "#4a5563",
   accent: "#0f6e56",
   accentLite: "#1fa37a",
-  glass: "#c8e7ff",
   warn: "#c45c26",
   bg: "#1a2332",
 };
+
+/** Public asset paths for equipment product photos */
+export const EQUIPMENT_PHOTOS: Partial<Record<EquipmentId, string>> = {
+  "tablet-press": "./equipment/tablet-press.jpg",
+  "capsule-filler": "./equipment/capsule-filler.jpg",
+  "metal-detector": "./equipment/metal-detector.jpg",
+  "pill-counter": "./equipment/pill-counter.jpg",
+  capping: "./equipment/cap-seal.jpg",
+  "induction-sealer": "./equipment/cap-seal.jpg",
+  "blister-packer": "./equipment/blister-packer.jpg",
+};
+
+export interface HeroStation {
+  id: EquipmentId;
+  label: string;
+  model: string;
+  photo: string;
+}
+
+export const HERO_STATIONS: HeroStation[] = [
+  {
+    id: "tablet-press",
+    label: "Tablet Press",
+    model: "SED-GY-D",
+    photo: "./equipment/tablet-press.jpg",
+  },
+  {
+    id: "metal-detector",
+    label: "Metal Detect",
+    model: "SED MD",
+    photo: "./equipment/metal-detector.jpg",
+  },
+  {
+    id: "pill-counter",
+    label: "Pill Counter",
+    model: "SED Count",
+    photo: "./equipment/pill-counter.jpg",
+  },
+  {
+    id: "capping",
+    label: "Cap / Seal",
+    model: "SED Cap+Seal",
+    photo: "./equipment/cap-seal.jpg",
+  },
+  {
+    id: "blister-packer",
+    label: "Blister",
+    model: "SED-P-A",
+    photo: "./equipment/blister-packer.jpg",
+  },
+];
+
+export function heroLineHtml(): string {
+  const cards = HERO_STATIONS.map(
+    (s, i) => `
+    <article class="hero-station" style="animation-delay:${i * 80}ms">
+      <div class="hero-station-photo">
+        <img src="${s.photo}" alt="${s.label} — ${s.model}" loading="lazy" width="240" height="240" />
+      </div>
+      <header>
+        <strong>${s.label}</strong>
+        <span>${s.model}</span>
+      </header>
+    </article>
+    ${i < HERO_STATIONS.length - 1 ? '<div class="hero-flow" aria-hidden="true">→</div>' : ""}`,
+  ).join("");
+
+  return `
+  <div class="hero-line" role="img" aria-label="SED solid dose production line">
+    <div class="hero-line-track">${cards}</div>
+    <p class="hero-line-caption">
+      Solid-dose flow: Press / Fill → Inspect → Count or Blister → Cap &amp; Seal
+      <span>SED Machines · Ontario, CA showroom logic in playable form</span>
+    </p>
+  </div>`;
+}
 
 function machineFrame(
   title: string,
@@ -35,6 +110,25 @@ function machineFrame(
   <text x="${width - 12}" y="19" fill="#d7fff0" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="end">${model}</text>
   ${body}
 </svg>`;
+}
+
+export function equipmentCardHtml(
+  id: EquipmentId,
+  title: string,
+  model: string,
+): string {
+  const photo = EQUIPMENT_PHOTOS[id];
+  if (photo) {
+    return `
+    <div class="equip-photo-card">
+      <img src="${photo}" alt="${title}" loading="lazy" width="200" height="150" />
+      <div class="equip-photo-label">
+        <strong>${title}</strong>
+        <span>${model}</span>
+      </div>
+    </div>`;
+  }
+  return equipmentSvg(id);
 }
 
 export function equipmentSvg(id: EquipmentId): string {
@@ -154,105 +248,7 @@ export function equipmentSvg(id: EquipmentId): string {
   }
 }
 
+/** @deprecated Prefer heroLineHtml() — kept for type compat */
 export function heroSvg(): string {
-  return `
-<svg viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg" class="hero-art" role="img" aria-label="SED solid dose production line">
-  <defs>
-    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#243247"/>
-      <stop offset="100%" stop-color="#121a26"/>
-    </linearGradient>
-    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#0f6e56" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#1fa37a" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#0f6e56" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#d5dde8"/>
-      <stop offset="100%" stop-color="#8b98a8"/>
-    </linearGradient>
-  </defs>
-  <rect width="960" height="420" fill="url(#floor)"/>
-  <rect y="300" width="960" height="120" fill="#0d141f"/>
-  <rect y="300" width="960" height="18" fill="url(#glow)"/>
-
-  <!-- conveyor -->
-  <rect x="40" y="268" width="880" height="18" rx="4" fill="#3b4658"/>
-  <g fill="#1fa37a" opacity="0.7">
-    <rect x="60" y="272" width="28" height="10" rx="2"/>
-    <rect x="120" y="272" width="28" height="10" rx="2"/>
-    <rect x="180" y="272" width="28" height="10" rx="2"/>
-    <rect x="240" y="272" width="28" height="10" rx="2"/>
-    <rect x="300" y="272" width="28" height="10" rx="2"/>
-    <rect x="360" y="272" width="28" height="10" rx="2"/>
-    <rect x="420" y="272" width="28" height="10" rx="2"/>
-    <rect x="480" y="272" width="28" height="10" rx="2"/>
-    <rect x="540" y="272" width="28" height="10" rx="2"/>
-    <rect x="600" y="272" width="28" height="10" rx="2"/>
-    <rect x="660" y="272" width="28" height="10" rx="2"/>
-    <rect x="720" y="272" width="28" height="10" rx="2"/>
-    <rect x="780" y="272" width="28" height="10" rx="2"/>
-    <rect x="840" y="272" width="28" height="10" rx="2"/>
-  </g>
-
-  <!-- press -->
-  <g transform="translate(70,110)">
-    <rect width="140" height="150" rx="10" fill="url(#steel)" stroke="#334155" stroke-width="3"/>
-    <rect width="140" height="28" fill="#0f6e56"/>
-    <text x="12" y="19" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif" font-weight="700">Tablet Press</text>
-    <circle cx="70" cy="95" r="36" fill="#64748b" stroke="#1e293b" stroke-width="3"/>
-    <circle cx="70" cy="95" r="14" fill="#e2e8f0"/>
-  </g>
-
-  <!-- detector -->
-  <g transform="translate(260,130)">
-    <rect width="120" height="130" rx="10" fill="url(#steel)" stroke="#334155" stroke-width="3"/>
-    <rect width="120" height="28" fill="#0f6e56"/>
-    <text x="10" y="19" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif" font-weight="700">Metal Detect</text>
-    <rect x="25" y="55" width="70" height="45" fill="#0f172a"/>
-    <rect x="35" y="68" width="50" height="18" fill="#c45c26"/>
-  </g>
-
-  <!-- counter -->
-  <g transform="translate(430,120)">
-    <rect width="130" height="140" rx="10" fill="url(#steel)" stroke="#334155" stroke-width="3"/>
-    <rect width="130" height="28" fill="#0f6e56"/>
-    <text x="12" y="19" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif" font-weight="700">Pill Counter</text>
-    <rect x="18" y="50" width="50" height="70" fill="#94a3b8"/>
-    <rect x="78" y="70" width="36" height="55" rx="4" fill="#cbd5e1" stroke="#334155"/>
-  </g>
-
-  <!-- cap + seal -->
-  <g transform="translate(610,125)">
-    <rect width="120" height="135" rx="10" fill="url(#steel)" stroke="#334155" stroke-width="3"/>
-    <rect width="120" height="28" fill="#0f6e56"/>
-    <text x="18" y="19" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif" font-weight="700">Cap / Seal</text>
-    <rect x="48" y="55" width="24" height="40" fill="#64748b"/>
-    <rect x="35" y="95" width="50" height="28" rx="4" fill="#cbd5e1"/>
-  </g>
-
-  <!-- blister -->
-  <g transform="translate(780,135)">
-    <rect width="130" height="125" rx="10" fill="url(#steel)" stroke="#334155" stroke-width="3"/>
-    <rect width="130" height="28" fill="#0f6e56"/>
-    <text x="14" y="19" fill="#fff" font-size="12" font-family="IBM Plex Sans, sans-serif" font-weight="700">Blister</text>
-    <g fill="#e2e8f0" stroke="#475569">
-      <rect x="18" y="55" width="20" height="14" rx="3"/>
-      <rect x="44" y="55" width="20" height="14" rx="3"/>
-      <rect x="70" y="55" width="20" height="14" rx="3"/>
-      <rect x="96" y="55" width="20" height="14" rx="3"/>
-      <rect x="18" y="78" width="20" height="14" rx="3"/>
-      <rect x="44" y="78" width="20" height="14" rx="3"/>
-      <rect x="70" y="78" width="20" height="14" rx="3"/>
-      <rect x="96" y="78" width="20" height="14" rx="3"/>
-    </g>
-  </g>
-
-  <text x="48" y="360" fill="#9fb0c3" font-size="14" font-family="IBM Plex Sans, sans-serif">
-    Solid-dose flow: Press / Fill → Inspect → Count or Blister → Cap &amp; Seal
-  </text>
-  <text x="48" y="388" fill="#1fa37a" font-size="13" font-family="IBM Plex Mono, monospace">
-    SED Machines · Ontario, CA showroom logic in playable form
-  </text>
-</svg>`;
+  return heroLineHtml();
 }

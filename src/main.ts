@@ -2,7 +2,7 @@ import "./style.css";
 import { LEVELS } from "./game/levels";
 import { EQUIPMENT } from "./game/equipment";
 import { LineSimulator } from "./game/simulator";
-import { equipmentSvg, heroSvg } from "./game/art";
+import { equipmentCardHtml, heroLineHtml } from "./game/art";
 import type { LevelDef, SimSnapshot } from "./game/types";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -134,7 +134,7 @@ function renderHome(): string {
 
     <section class="hero">
       <img class="hero-photo" src="./sed-line-hero.png" alt="SED pharmaceutical packaging production line" width="960" height="540" />
-      ${heroSvg()}
+      ${heroLineHtml()}
       <div class="hero-copy">
         <h2>Run a pharmaceutical line. Keep every station in window.</h2>
         <p>
@@ -195,7 +195,12 @@ function renderBrief(level: LevelDef): string {
       <h3 style="margin-bottom:6px">Line equipment</h3>
       <ul style="margin-top:0; color:var(--muted); line-height:1.55">${gear}</ul>
       <div class="station-row">
-        ${level.equipment.map((id) => `<div class="station">${equipmentSvg(id)}</div>`).join("")}
+        ${level.equipment
+          .map((id) => {
+            const e = EQUIPMENT[id];
+            return `<div class="station">${equipmentCardHtml(id, e.name, e.model)}</div>`;
+          })
+          .join("")}
       </div>
       <div class="actions">
         <button class="btn-primary" id="btn-run">Start run</button>
@@ -218,7 +223,7 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
       const e = EQUIPMENT[st.id];
       return `
         <div class="station ${st.status}" data-station="${st.id}">
-          ${equipmentSvg(st.id)}
+          ${equipmentCardHtml(st.id, e.name, e.model)}
           <div class="meta">${e.name}<br/>${st.status.toUpperCase()} · health ${Math.round(st.health)}%</div>
         </div>`;
     })

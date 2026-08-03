@@ -116,17 +116,150 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 320px;
+  max-height: 280px;
   object-fit: cover;
   object-position: center;
   border-bottom: 1px solid var(--line);
 }
 
-.hero-art {
+.hero-line {
+  background:
+    linear-gradient(180deg, #152033 0%, #0f1724 100%);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 14px 14px;
+  overflow: hidden;
+}
+
+.hero-line-track {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.hero-station {
+  flex: 0 0 148px;
+  background: #1a2740;
+  border: 1px solid #314560;
+  border-radius: 12px;
+  overflow: hidden;
+  animation: stationIn 0.45s ease both;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hero-station:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-2);
+  box-shadow: 0 10px 24px rgba(20, 147, 111, 0.22);
+}
+
+@keyframes stationIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-station-photo {
+  aspect-ratio: 1;
+  background: #0b1220;
+  overflow: hidden;
+}
+
+.hero-station-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
+  transition: transform 0.35s ease;
+}
+
+.hero-station:hover .hero-station-photo img {
+  transform: scale(1.06);
+}
+
+.hero-station header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px 10px;
+}
+
+.hero-station header strong {
+  font-size: 0.82rem;
+}
+
+.hero-station header span {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent-2);
+}
+
+.hero-flow {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--accent-2);
+  font-size: 1.1rem;
+  opacity: 0.75;
+  padding: 0 2px;
+}
+
+.hero-line-caption {
+  margin: 10px 4px 0;
+  color: #9fb0c3;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.hero-line-caption span {
+  display: block;
+  margin-top: 4px;
+  color: var(--accent-2);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.equip-photo-card {
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b1220;
+  border: 1px solid var(--line);
+}
+
+.equip-photo-card img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  display: block;
+}
+
+.equip-photo-label {
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.equip-photo-label strong {
+  font-size: 0.78rem;
+}
+
+.equip-photo-label span {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent-2);
+}
+
+.station svg {
   width: 100%;
   height: auto;
-  background: #121a26;
+  display: block;
 }
 
 .hero-copy {
