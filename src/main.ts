@@ -133,7 +133,18 @@ function renderHome(): string {
     </div>
 
     <section class="hero">
-      <img class="hero-photo" src="./sed-line-hero.png" alt="SED pharmaceutical packaging production line" width="960" height="540" />
+      <picture class="hero-photo-wrap">
+        <source media="(max-width: 700px)" srcset="./sed-line-hero-sm.jpg" type="image/jpeg" />
+        <img
+          class="hero-photo"
+          src="./sed-line-hero.jpg"
+          alt="SED pharmaceutical packaging production line"
+          width="1280"
+          height="853"
+          decoding="async"
+          fetchpriority="high"
+        />
+      </picture>
       ${heroLineHtml()}
       <div class="hero-copy">
         <h2>Run a pharmaceutical line. Keep every station in window.</h2>

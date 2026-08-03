@@ -112,14 +112,21 @@ body {
   margin-bottom: 20px;
 }
 
+.hero-photo-wrap {
+  display: block;
+  width: 100%;
+  background: #0b1220;
+  border-bottom: 1px solid var(--line);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
 .hero-photo {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 280px;
+  height: 100%;
   object-fit: cover;
-  object-position: center;
-  border-bottom: 1px solid var(--line);
+  object-position: center 40%;
 }
 
 .hero-line {
@@ -557,6 +564,131 @@ button:disabled {
 @media (max-width: 600px) {
   .result-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  #app {
+    padding: 12px 12px 36px;
+  }
+
+  .brand-bar {
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .brand h1 {
+    font-size: 1.15rem;
+  }
+
+  .brand p {
+    font-size: 0.78rem;
+  }
+
+  .ext-link {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
+
+  .hero-photo-wrap {
+    aspect-ratio: 2 / 1;
+  }
+
+  .hero-line {
+    padding: 12px 10px 10px;
+  }
+
+  .hero-station {
+    flex: 0 0 118px;
+  }
+
+  .hero-flow {
+    font-size: 0.9rem;
+  }
+
+  .hero-line-caption {
+    font-size: 0.76rem;
+  }
+
+  .hero-copy {
+    padding: 14px 14px 16px;
+  }
+
+  .hero-copy h2 {
+    font-size: 1.2rem;
+  }
+
+  .hero-copy p {
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions .btn,
+  .actions button,
+  .actions a.btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .level-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .station {
+    min-width: 140px;
+  }
+
+  .equip-photo-card img {
+    height: 96px;
+  }
+
+  .control header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .control input[type="range"] {
+    height: 28px;
+    touch-action: pan-y;
+  }
+
+  .metric .value {
+    font-size: 1.05rem;
+  }
+
+  .log {
+    max-height: 140px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .hero-photo-wrap {
+    aspect-ratio: 16 / 9;
+  }
+
+  .hud {
+    gap: 6px;
+  }
+
+  .metric {
+    padding: 8px;
   }
 }
 
