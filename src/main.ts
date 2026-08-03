@@ -140,7 +140,7 @@ function renderHome(): string {
           src="./sed-line-hero.jpg"
           alt="SED pharmaceutical packaging production line"
           width="1280"
-          height="853"
+          height="360"
           decoding="async"
           fetchpriority="high"
         />

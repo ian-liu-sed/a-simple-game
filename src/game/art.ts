@@ -13,6 +13,7 @@ const palette = {
 export const EQUIPMENT_PHOTOS: Partial<Record<EquipmentId, string>> = {
   "tablet-press": "./equipment/tablet-press.jpg",
   "capsule-filler": "./equipment/capsule-filler.jpg",
+  "capsule-polisher": "./equipment/capsule-polisher.jpg",
   "metal-detector": "./equipment/metal-detector.jpg",
   "pill-counter": "./equipment/pill-counter.jpg",
   capping: "./equipment/cap-seal.jpg",
@@ -63,9 +64,9 @@ export const HERO_STATIONS: HeroStation[] = [
 export function heroLineHtml(): string {
   const cards = HERO_STATIONS.map(
     (s, i) => `
-    <article class="hero-station" style="animation-delay:${i * 80}ms">
+    <article class="hero-station" style="animation-delay:${i * 50}ms">
       <div class="hero-station-photo">
-        <img src="${s.photo}" alt="${s.label} — ${s.model}" loading="lazy" width="240" height="240" />
+        <img src="${s.photo}" alt="${s.label} — ${s.model}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async" width="120" height="90" />
       </div>
       <header>
         <strong>${s.label}</strong>
@@ -121,7 +122,7 @@ export function equipmentCardHtml(
   if (photo) {
     return `
     <div class="equip-photo-card">
-      <img src="${photo}" alt="${title}" loading="lazy" width="200" height="150" />
+      <img src="${photo}" alt="${title}" loading="lazy" decoding="async" width="200" height="150" />
       <div class="equip-photo-label">
         <strong>${title}</strong>
         <span>${model}</span>
