@@ -140,12 +140,11 @@ function renderHome(): string {
           src="./sed-line-hero.jpg"
           alt="SED pharmaceutical packaging production line"
           width="1280"
-          height="360"
+          height="853"
           decoding="async"
           fetchpriority="high"
         />
       </picture>
-      ${heroLineHtml()}
       <div class="hero-copy">
         <h2>Run a pharmaceutical line. Keep every station in window.</h2>
         <p>
@@ -160,7 +159,13 @@ function renderHome(): string {
       </div>
     </section>
 
-    <h2 style="margin: 0 0 8px; font-size: 1.05rem;">Missions</h2>
+    <section class="line-stations panel">
+      <h2 class="line-stations-title">Line stations</h2>
+      <p class="line-stations-lead">Tap a mission below. These machines show up in the runs.</p>
+      ${heroLineHtml()}
+    </section>
+
+    <h2 style="margin: 18px 0 8px; font-size: 1.05rem;">Missions</h2>
     <div class="level-grid">${cards}</div>
 
     <p class="foot">
