@@ -1,6 +1,6 @@
 # SED Line Pilot
 
-Serious web game about [SED Machines](https://sedmachines.com) pharmaceutical & packaging equipment.
+Serious web game about [SED Machines](https://sedmachines.com) pharmaceutical & packaging equipment. We deployed this game in https://sed-line-pilot.onrender.com to user know more about equipment function. 
 
 Play as a line operator / plant engineer. Tune process parameters on tablet presses, capsule fillers, metal detectors, pill counters, cappers, induction sealers, and blister packers. Survive disturbances and chase OEE.
 
