@@ -1,9 +1,19 @@
 import "./style.css";
 import { LEVELS } from "./game/levels";
-import { EQUIPMENT } from "./game/equipment";
 import { LineSimulator } from "./game/simulator";
 import { equipmentCardHtml, heroLineHtml } from "./game/art";
 import type { LevelDef, SimSnapshot } from "./game/types";
+import {
+  applyDocumentLang,
+  bindLangSwitch,
+  equipT,
+  getLang,
+  langSwitchHtml,
+  localizeLevel,
+  productLabel,
+  statusLabel,
+  t,
+} from "./i18n";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("#app missing");
@@ -17,6 +27,8 @@ let snap: SimSnapshot | null = null;
 let raf = 0;
 let lastTs = 0;
 let bestScores: Record<string, number> = loadBest();
+
+applyDocumentLang();
 
 function loadBest(): Record<string, number> {
   try {
@@ -35,7 +47,7 @@ function saveBest(levelId: string, score: number): void {
 }
 
 function currentLevel(): LevelDef {
-  return LEVELS[levelIndex];
+  return localizeLevel(LEVELS[levelIndex]);
 }
 
 function goHome(): void {
@@ -77,7 +89,7 @@ function loop(ts: number): void {
   snap = sim.tick(dt);
   patchPlay(snap);
   if (snap.finished && snap.result) {
-    saveBest(currentLevel().id, snap.result.score);
+    saveBest(LEVELS[levelIndex].id, snap.result.score);
     stopLoop();
     screen = "result";
     render();
@@ -87,6 +99,11 @@ function loop(ts: number): void {
 }
 
 function render(): void {
+  document.title =
+    getLang() === "zh"
+      ? "SED 产线飞行员 | SED Machines"
+      : "SED Line Pilot | SED Machines";
+
   if (screen === "home") {
     app!.innerHTML = renderHome();
     bindHome();
@@ -108,12 +125,22 @@ function render(): void {
   }
 }
 
+function brandActions(extra?: string): string {
+  return `
+  <div class="brand-actions">
+    ${langSwitchHtml()}
+    ${extra ?? ""}
+  </div>`;
+}
+
 function renderHome(): string {
-  const cards = LEVELS.map((level, i) => {
-    const best = bestScores[level.id];
+  const ui = t();
+  const cards = LEVELS.map((raw, i) => {
+    const level = localizeLevel(raw);
+    const best = bestScores[raw.id];
     return `
       <button class="level-card" data-level="${i}">
-        <span class="tag">${level.id.toUpperCase()}${best != null ? ` · BEST ${best}` : ""}</span>
+        <span class="tag">${raw.id.toUpperCase()}${best != null ? ` · ${ui.best} ${best}` : ""}</span>
         <h3>${level.title}</h3>
         <p>${level.subtitle}</p>
       </button>`;
@@ -126,10 +153,10 @@ function renderHome(): string {
         <div class="brand-mark">SED</div>
         <div>
           <h1>SED Line Pilot</h1>
-          <p>Serious game · solid-dose equipment logic</p>
+          <p>${ui.tagline}</p>
         </div>
       </div>
-      <a class="ext-link" href="https://sedmachines.com" target="_blank" rel="noreferrer">sedmachines.com</a>
+      ${brandActions(`<a class="ext-link" href="https://sedmachines.com" target="_blank" rel="noreferrer">sedmachines.com</a>`)}
     </div>
 
     <section class="hero">
@@ -138,7 +165,7 @@ function renderHome(): string {
         <img
           class="hero-photo"
           src="./sed-line-hero.jpg"
-          alt="SED pharmaceutical packaging production line"
+          alt="${ui.heroAlt}"
           width="1280"
           height="853"
           decoding="async"
@@ -146,36 +173,35 @@ function renderHome(): string {
         />
       </picture>
       <div class="hero-copy">
-        <h2>Run a pharmaceutical line. Keep every station in window.</h2>
-        <p>
-          Learn how SED Machines gear works together — tablet presses, capsule fillers,
-          metal detectors, counters, cappers, induction sealers, and blister packers.
-          Tune real process parameters, survive disturbances, and chase OEE.
-        </p>
+        <h2>${ui.heroTitle}</h2>
+        <p>${ui.heroBody}</p>
         <div class="actions">
-          <button class="btn-primary" id="btn-start">Start Level 1</button>
-          <a class="btn btn-ghost" href="https://sedmachines.com/catalog" target="_blank" rel="noreferrer">Browse equipment catalog</a>
+          <button class="btn-primary" id="btn-start">${ui.startLevel1}</button>
+          <a class="btn btn-ghost" href="https://sedmachines.com/catalog" target="_blank" rel="noreferrer">${ui.browseCatalog}</a>
         </div>
       </div>
     </section>
 
     <section class="line-stations panel">
-      <h2 class="line-stations-title">Line stations</h2>
-      <p class="line-stations-lead">Tap a mission below. These machines show up in the runs.</p>
+      <h2 class="line-stations-title">${ui.lineStations}</h2>
+      <p class="line-stations-lead">${ui.lineStationsLead}</p>
       ${heroLineHtml()}
     </section>
 
-    <h2 style="margin: 18px 0 8px; font-size: 1.05rem;">Missions</h2>
+    <h2 style="margin: 18px 0 8px; font-size: 1.05rem;">${ui.missions}</h2>
     <div class="level-grid">${cards}</div>
 
     <p class="foot">
-      Inspired by <a href="https://sedmachines.com" target="_blank" rel="noreferrer">SED Machines</a>
-      / SED Pharma production &amp; packaging equipment. Training simulation — not a control system.
+      ${ui.foot.replace(
+        "SED Machines",
+        '<a href="https://sedmachines.com" target="_blank" rel="noreferrer">SED Machines</a>',
+      )}
     </p>
   </div>`;
 }
 
 function bindHome(): void {
+  bindLangSwitch(render);
   document.getElementById("btn-start")?.addEventListener("click", () => openBrief(0));
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -185,9 +211,10 @@ function bindHome(): void {
 }
 
 function renderBrief(level: LevelDef): string {
+  const ui = t();
   const gear = level.equipment
     .map((id) => {
-      const e = EQUIPMENT[id];
+      const e = equipT(id);
       return `<li><strong>${e.name}</strong> (${e.model}) — ${e.role}</li>`;
     })
     .join("");
@@ -202,45 +229,47 @@ function renderBrief(level: LevelDef): string {
           <p>${level.subtitle}</p>
         </div>
       </div>
-      <button class="btn-ghost" id="btn-back">All missions</button>
+      ${brandActions(`<button class="btn-ghost" id="btn-back">${ui.allMissions}</button>`)}
     </div>
 
     <div class="panel">
       <p style="margin-top:0; line-height:1.55; color:var(--muted)">${level.briefing}</p>
-      <p><strong>Target:</strong> ${level.targetUnits} good units · <strong>Shift:</strong> ${level.durationSec}s · <strong>Form:</strong> ${level.product}</p>
-      <h3 style="margin-bottom:6px">Line equipment</h3>
+      <p><strong>${ui.target}:</strong> ${level.targetUnits} ${ui.goodUnits} · <strong>${ui.shift}:</strong> ${level.durationSec}s · <strong>${ui.form}:</strong> ${productLabel(level.product)}</p>
+      <h3 style="margin-bottom:6px">${ui.lineEquipment}</h3>
       <ul style="margin-top:0; color:var(--muted); line-height:1.55">${gear}</ul>
       <div class="station-row">
         ${level.equipment
           .map((id) => {
-            const e = EQUIPMENT[id];
+            const e = equipT(id);
             return `<div class="station">${equipmentCardHtml(id, e.name, e.model)}</div>`;
           })
           .join("")}
       </div>
       <div class="actions">
-        <button class="btn-primary" id="btn-run">Start run</button>
-        <button class="btn-ghost" id="btn-back-2">Back</button>
+        <button class="btn-primary" id="btn-run">${ui.startRun}</button>
+        <button class="btn-ghost" id="btn-back-2">${ui.back}</button>
       </div>
     </div>
   </div>`;
 }
 
 function bindBrief(): void {
+  bindLangSwitch(render);
   document.getElementById("btn-back")?.addEventListener("click", goHome);
   document.getElementById("btn-back-2")?.addEventListener("click", goHome);
   document.getElementById("btn-run")?.addEventListener("click", startRun);
 }
 
 function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
+  const ui = t();
   const pct = Math.min(100, (s.produced / s.target) * 100);
   const stations = s.stations
     .map((st) => {
-      const e = EQUIPMENT[st.id];
+      const e = equipT(st.id);
       return `
         <div class="station ${st.status}" data-station="${st.id}">
           ${equipmentCardHtml(st.id, e.name, e.model)}
-          <div class="meta">${e.name}<br/>${st.status.toUpperCase()} · health ${Math.round(st.health)}%</div>
+          <div class="meta">${e.name}<br/>${statusLabel(st.status)} · ${ui.health} ${Math.round(st.health)}%</div>
         </div>`;
     })
     .join("");
@@ -252,7 +281,7 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
         <div class="control">
           <header>
             <span>${c.label}</span>
-            <span class="ideal">ideal ${c.ideal}${c.unit} ±${c.tolerance}</span>
+            <span class="ideal">${ui.ideal} ${c.ideal}${c.unit} ±${c.tolerance}</span>
           </header>
           <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" />
           <div class="ideal"><span data-val="${c.key}">${formatVal(v, c.step)}</span> ${c.unit}</div>
@@ -267,17 +296,17 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
         <div class="brand-mark">SED</div>
         <div>
           <h1>${level.title}</h1>
-          <p>Keep parameters inside process window</p>
+          <p>${ui.keepWindow}</p>
         </div>
       </div>
-      <button class="btn-warn" id="btn-abort">Abort</button>
+      ${brandActions(`<button class="btn-warn" id="btn-abort">${ui.abort}</button>`)}
     </div>
 
     <div class="hud">
-      <div class="metric"><div class="label">Good units</div><div class="value" id="m-produced">${s.produced}/${s.target}</div></div>
-      <div class="metric"><div class="label">Rejects</div><div class="value" id="m-reject">${s.rejected}</div></div>
-      <div class="metric"><div class="label">Time left</div><div class="value" id="m-time">${Math.ceil(s.remaining)}s</div></div>
-      <div class="metric ${s.alarm ? "alarm" : ""}"><div class="label">Status</div><div class="value" id="m-status">${s.alarm ? "ALARM" : "RUN"}</div></div>
+      <div class="metric"><div class="label">${ui.goodUnitsHud}</div><div class="value" id="m-produced">${s.produced}/${s.target}</div></div>
+      <div class="metric"><div class="label">${ui.rejects}</div><div class="value" id="m-reject">${s.rejected}</div></div>
+      <div class="metric"><div class="label">${ui.timeLeft}</div><div class="value" id="m-time">${Math.ceil(s.remaining)}s</div></div>
+      <div class="metric ${s.alarm ? "alarm" : ""}"><div class="label">${ui.status}</div><div class="value" id="m-status">${s.alarm ? ui.alarm : ui.run}</div></div>
     </div>
 
     <div class="progress"><span id="m-bar" style="width:${pct}%"></span></div>
@@ -285,13 +314,13 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
     <div class="play-layout">
       <div class="panel">
         <div class="station-row" id="stations">${stations}</div>
-        <p class="tips" id="alarm-text">${s.alarm ? `<strong>Alarm:</strong> ${s.alarm}` : "Line nominal. Watch for process disturbances."}</p>
-        <div class="tips"><strong>Operator tips</strong><br/>${tips.map((t) => `• ${t}`).join("<br/>")}</div>
+        <p class="tips" id="alarm-text">${s.alarm ? `<strong>${ui.alarm}:</strong> ${s.alarm}` : ui.lineNominal}</p>
+        <div class="tips"><strong>${ui.operatorTips}</strong><br/>${tips.map((tip) => `• ${tip}`).join("<br/>")}</div>
       </div>
       <div class="panel">
-        <h3 style="margin-top:0">Process controls</h3>
+        <h3 style="margin-top:0">${ui.processControls}</h3>
         <div class="controls" id="controls">${controls}</div>
-        <h3>Event log</h3>
+        <h3>${ui.eventLog}</h3>
         <ul class="log" id="log">${s.log.map((l) => `<li>${l}</li>`).join("")}</ul>
       </div>
     </div>
@@ -299,6 +328,14 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
 }
 
 function bindPlay(): void {
+  bindLangSwitch(() => {
+    // Keep run going; only re-render chrome would lose sim state mid-tick.
+    // Re-render play frame with same snap.
+    if (sim && snap) {
+      screen = "play";
+      render();
+    }
+  });
   document.getElementById("btn-abort")?.addEventListener("click", goHome);
   document.querySelectorAll<HTMLInputElement>("input[data-key]").forEach((input) => {
     input.addEventListener("input", () => {
@@ -314,6 +351,7 @@ function bindPlay(): void {
 }
 
 function patchPlay(s: SimSnapshot): void {
+  const ui = t();
   const set = (id: string, text: string) => {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -321,7 +359,7 @@ function patchPlay(s: SimSnapshot): void {
   set("m-produced", `${s.produced}/${s.target}`);
   set("m-reject", String(s.rejected));
   set("m-time", `${Math.ceil(s.remaining)}s`);
-  set("m-status", s.alarm ? "ALARM" : "RUN");
+  set("m-status", s.alarm ? ui.alarm : ui.run);
   const statusMetric = document.getElementById("m-status")?.parentElement;
   statusMetric?.classList.toggle("alarm", Boolean(s.alarm));
   const bar = document.getElementById("m-bar");
@@ -329,8 +367,8 @@ function patchPlay(s: SimSnapshot): void {
   const alarm = document.getElementById("alarm-text");
   if (alarm) {
     alarm.innerHTML = s.alarm
-      ? `<strong>Alarm:</strong> ${s.alarm}`
-      : "Line nominal. Watch for process disturbances.";
+      ? `<strong>${ui.alarm}:</strong> ${s.alarm}`
+      : ui.lineNominal;
   }
   const log = document.getElementById("log");
   if (log) log.innerHTML = s.log.map((l) => `<li>${l}</li>`).join("");
@@ -341,14 +379,15 @@ function patchPlay(s: SimSnapshot): void {
     el.classList.toggle("running", st.status === "running");
     el.classList.toggle("alarm", st.status === "alarm");
     const meta = el.querySelector(".meta");
-    const e = EQUIPMENT[st.id];
+    const e = equipT(st.id);
     if (meta) {
-      meta.innerHTML = `${e.name}<br/>${st.status.toUpperCase()} · health ${Math.round(st.health)}%`;
+      meta.innerHTML = `${e.name}<br/>${statusLabel(st.status)} · ${ui.health} ${Math.round(st.health)}%`;
     }
   });
 }
 
 function renderResult(level: LevelDef, s: SimSnapshot): string {
+  const ui = t();
   const r = s.result!;
   return `
   <div class="screen">
@@ -356,34 +395,36 @@ function renderResult(level: LevelDef, s: SimSnapshot): string {
       <div class="brand">
         <div class="brand-mark">SED</div>
         <div>
-          <h1>Batch report</h1>
+          <h1>${ui.batchReport}</h1>
           <p>${level.title}</p>
         </div>
       </div>
+      ${brandActions()}
     </div>
     <div class="panel">
       <div class="result-banner ${r.passed ? "pass" : "fail"}">
-        <h2 style="margin:0 0 6px">${r.passed ? "RELEASED — process capable" : "HELD — out of window"}</h2>
-        <p style="margin:0; color:var(--muted)">Score ${r.score} · Best ${bestScores[level.id] ?? r.score}</p>
+        <h2 style="margin:0 0 6px">${r.passed ? ui.released : ui.held}</h2>
+        <p style="margin:0; color:var(--muted)">${ui.score} ${r.score} · ${ui.best} ${bestScores[LEVELS[levelIndex].id] ?? r.score}</p>
         <div class="result-grid">
-          <div class="metric"><div class="label">Produced</div><div class="value">${r.produced}</div></div>
-          <div class="metric"><div class="label">Rejects</div><div class="value">${r.rejected}</div></div>
-          <div class="metric"><div class="label">Quality</div><div class="value">${r.qualityPct}%</div></div>
-          <div class="metric"><div class="label">OEE</div><div class="value">${r.oeePct}%</div></div>
-          <div class="metric"><div class="label">Downtime</div><div class="value">${r.downtimeSec}s</div></div>
-          <div class="metric"><div class="label">Target</div><div class="value">${level.targetUnits}</div></div>
+          <div class="metric"><div class="label">${ui.produced}</div><div class="value">${r.produced}</div></div>
+          <div class="metric"><div class="label">${ui.rejects}</div><div class="value">${r.rejected}</div></div>
+          <div class="metric"><div class="label">${ui.quality}</div><div class="value">${r.qualityPct}%</div></div>
+          <div class="metric"><div class="label">${ui.oee}</div><div class="value">${r.oeePct}%</div></div>
+          <div class="metric"><div class="label">${ui.downtime}</div><div class="value">${r.downtimeSec}s</div></div>
+          <div class="metric"><div class="label">${ui.target}</div><div class="value">${level.targetUnits}</div></div>
         </div>
       </div>
       <div class="actions" style="margin-top:14px">
-        <button class="btn-primary" id="btn-retry">Retry</button>
-        <button class="btn-ghost" id="btn-next">${levelIndex < LEVELS.length - 1 ? "Next mission" : "Back to hub"}</button>
-        <a class="btn btn-ghost" href="https://sedmachines.com" target="_blank" rel="noreferrer">Explore SED Machines</a>
+        <button class="btn-primary" id="btn-retry">${ui.retry}</button>
+        <button class="btn-ghost" id="btn-next">${levelIndex < LEVELS.length - 1 ? ui.nextMission : ui.backToHub}</button>
+        <a class="btn btn-ghost" href="https://sedmachines.com" target="_blank" rel="noreferrer">${ui.exploreSed}</a>
       </div>
     </div>
   </div>`;
 }
 
 function bindResult(): void {
+  bindLangSwitch(render);
   document.getElementById("btn-retry")?.addEventListener("click", startRun);
   document.getElementById("btn-next")?.addEventListener("click", () => {
     if (levelIndex < LEVELS.length - 1) openBrief(levelIndex + 1);
