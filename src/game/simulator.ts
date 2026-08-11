@@ -5,7 +5,7 @@ import type {
   SimSnapshot,
   StationState,
 } from "./types";
-import { EQUIPMENT } from "./equipment";
+import { equipT, simT } from "../i18n";
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
@@ -24,7 +24,6 @@ function qualityFromControls(
   let score = 0;
   for (const def of defs) {
     const d = deviation(controls[def.key] ?? def.ideal, def);
-    // Within tolerance → near 1; beyond → falls quickly
     score += d <= 1 ? 1 - d * 0.18 : Math.max(0.15, 1.15 - d * 0.55);
   }
   return clamp(score / defs.length, 0.12, 1);
@@ -39,7 +38,6 @@ function throughputFactor(
   if (!speedDef) return 0.85;
   const v = controls[speedDef.key] ?? speedDef.ideal;
   const ratio = v / speedDef.ideal;
-  // Over-speed helps a bit then hurts via quality elsewhere
   return clamp(0.55 + ratio * 0.55, 0.35, 1.35);
 }
 
@@ -71,14 +69,14 @@ export class LineSimulator {
       health: 100,
       status: "idle" as const,
     }));
-    this.pushLog(`Line armed: ${level.title}`);
+    this.pushLog(simT().lineArmed(level.title));
   }
 
   start(): void {
     if (this.finished) return;
     this.running = true;
     for (const s of this.stations) s.status = "running";
-    this.pushLog("Run started. Monitor process window.");
+    this.pushLog(simT().runStarted);
   }
 
   setControl(key: string, value: number): void {
@@ -103,7 +101,6 @@ export class LineSimulator {
     const goodRate = baseRate * speed * (0.55 + q * 0.55);
     const rejectRate = baseRate * speed * (1 - q) * 0.85;
 
-    // Alarm if any control far off
     const worst = this.level.controls
       .map((c) => ({
         c,
@@ -112,7 +109,7 @@ export class LineSimulator {
       .sort((a, b) => b.d - a.d)[0];
 
     if (worst && worst.d > 1.6) {
-      this.alarm = `${worst.c.label} outside process window`;
+      this.alarm = simT().outsideWindow(worst.c.label);
       this.downtime += dt * 0.35;
       for (const s of this.stations) {
         s.status = "alarm";
@@ -135,7 +132,6 @@ export class LineSimulator {
     const rej = rejectRate * effective * dt;
     this.rejected += rej;
 
-    // Distribute metrics across stations
     const n = this.stations.length || 1;
     for (const s of this.stations) {
       s.throughput = goodRate * effective;
@@ -211,14 +207,14 @@ export class LineSimulator {
 
     this.pushLog(
       passed
-        ? `Batch released. OEE ${this.result.oeePct}%`
-        : `Batch held. OEE ${this.result.oeePct}% — adjust process window.`,
+        ? simT().batchReleased(this.result.oeePct)
+        : simT().batchHeld(this.result.oeePct),
     );
   }
 
   private pushLog(msg: string): void {
-    const t = Math.floor(this.elapsed);
-    this.log.unshift(`[${String(t).padStart(2, "0")}s] ${msg}`);
+    const sec = Math.floor(this.elapsed);
+    this.log.unshift(`[${String(sec).padStart(2, "0")}s] ${msg}`);
     if (this.log.length > 8) this.log.length = 8;
   }
 
@@ -240,7 +236,7 @@ export class LineSimulator {
 
   getTips(): string[] {
     return this.level.equipment.map((id) => {
-      const e = EQUIPMENT[id];
+      const e = equipT(id);
       return `${e.name} (${e.model}): ${e.tip}`;
     });
   }

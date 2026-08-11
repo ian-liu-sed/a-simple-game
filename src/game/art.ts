@@ -1,4 +1,5 @@
 import type { EquipmentId } from "./types";
+import { equipT, t } from "../i18n";
 
 const palette = {
   steel: "#8a97a8",
@@ -62,26 +63,28 @@ export const HERO_STATIONS: HeroStation[] = [
 ];
 
 export function heroLineHtml(): string {
-  const cards = HERO_STATIONS.map(
-    (s, i) => `
+  const ui = t();
+  const cards = HERO_STATIONS.map((s, i) => {
+    const label = equipT(s.id).shortLabel;
+    return `
     <article class="hero-station" style="animation-delay:${i * 50}ms">
       <div class="hero-station-photo">
-        <img src="${s.photo}" alt="${s.label} — ${s.model}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async" width="120" height="90" />
+        <img src="${s.photo}" alt="${label} — ${s.model}" loading="${i < 2 ? "eager" : "lazy"}" decoding="async" width="120" height="90" />
       </div>
       <header>
-        <strong>${s.label}</strong>
+        <strong>${label}</strong>
         <span>${s.model}</span>
       </header>
     </article>
-    ${i < HERO_STATIONS.length - 1 ? '<div class="hero-flow" aria-hidden="true">→</div>' : ""}`,
-  ).join("");
+    ${i < HERO_STATIONS.length - 1 ? '<div class="hero-flow" aria-hidden="true">→</div>' : ""}`;
+  }).join("");
 
   return `
-  <div class="hero-line" role="img" aria-label="SED solid dose production line">
+  <div class="hero-line" role="img" aria-label="${ui.heroAlt}">
     <div class="hero-line-track">${cards}</div>
     <p class="hero-line-caption">
-      Solid-dose flow: Press / Fill → Inspect → Count or Blister → Cap &amp; Seal
-      <span>SED Machines · Ontario, CA showroom logic in playable form</span>
+      ${ui.heroFlow}
+      <span>${ui.heroCaption}</span>
     </p>
   </div>`;
 }

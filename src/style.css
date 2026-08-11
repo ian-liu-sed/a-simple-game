@@ -90,6 +90,47 @@ body {
   font-size: 0.85rem;
 }
 
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.lang-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  cursor: pointer;
+  border-radius: 0;
+  transform: none;
+}
+
+.lang-btn:hover {
+  transform: none;
+  color: var(--text);
+  background: rgba(31, 184, 136, 0.12);
+}
+
+.lang-btn.active {
+  background: rgba(20, 147, 111, 0.28);
+  color: #d7fff0;
+}
+
 .ext-link {
   color: var(--accent-2);
   text-decoration: none;
