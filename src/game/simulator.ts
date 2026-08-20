@@ -1,5 +1,6 @@
 import type {
   ControlDef,
+  DifficultyTier,
   LevelDef,
   RunStats,
   SimSnapshot,
@@ -14,6 +15,11 @@ function clamp(n: number, min: number, max: number): number {
 function deviation(value: number, control: ControlDef): number {
   const d = Math.abs(value - control.ideal) / control.tolerance;
   return d;
+}
+
+function alignToStep(value: number, control: ControlDef): number {
+  const steps = Math.round((value - control.min) / control.step);
+  return Number((control.min + steps * control.step).toFixed(4));
 }
 
 function qualityFromControls(
@@ -56,9 +62,15 @@ export class LineSimulator {
   private result: RunStats | null = null;
   private running = false;
   private carry = 0;
+  private difficulty: DifficultyTier;
+  private firedDifficultyEvents = new Set<string>();
+  private activeStop: { until: number; message: string; cleared: string } | null =
+    null;
+  private incidentsHandled = 0;
 
-  constructor(level: LevelDef) {
+  constructor(level: LevelDef, difficulty: DifficultyTier = 1) {
     this.level = level;
+    this.difficulty = difficulty;
     this.controls = Object.fromEntries(
       level.controls.map((c) => [c.key, c.ideal]),
     );
@@ -93,7 +105,9 @@ export class LineSimulator {
     if (!this.running || this.finished) return this.snapshot();
 
     this.elapsed += dt;
+    this.resolveActiveStop();
     this.handleEvents();
+    this.handleDifficultyEvents();
 
     const q = qualityFromControls(this.controls, this.level.controls);
     const speed = throughputFactor(this.controls, this.level.controls);
@@ -108,7 +122,15 @@ export class LineSimulator {
       }))
       .sort((a, b) => b.d - a.d)[0];
 
-    if (worst && worst.d > 1.6) {
+    if (this.activeStop) {
+      this.alarm = this.activeStop.message;
+      this.downtime += dt;
+      for (const s of this.stations) {
+        s.status = "alarm";
+        s.throughput = 0;
+        s.health = clamp(s.health - dt * 2.5, 20, 100);
+      }
+    } else if (worst && worst.d > 1.6) {
       this.alarm = simT().outsideWindow(worst.c.label);
       this.downtime += dt * 0.35;
       for (const s of this.stations) {
@@ -123,7 +145,7 @@ export class LineSimulator {
       }
     }
 
-    const effective = this.alarm ? 0.45 : 1;
+    const effective = this.activeStop ? 0 : this.alarm ? 0.45 : 1;
     this.carry += goodRate * effective * dt;
     const made = Math.floor(this.carry);
     this.carry -= made;
@@ -168,6 +190,60 @@ export class LineSimulator {
     });
   }
 
+  private handleDifficultyEvents(): void {
+    if (
+      this.difficulty >= 2 &&
+      !this.firedDifficultyEvents.has("human-error") &&
+      this.elapsed >= this.level.durationSec * 0.32
+    ) {
+      this.firedDifficultyEvents.add("human-error");
+      const control = this.level.controls[
+        Math.min(1, this.level.controls.length - 1)
+      ];
+      if (control) {
+        const direction = this.controls[control.key] <= control.ideal ? 1 : -1;
+        this.controls[control.key] = clamp(
+          alignToStep(
+            control.ideal + direction * control.tolerance * 2.1,
+            control,
+          ),
+          control.min,
+          control.max,
+        );
+        this.startStop(
+          simT().humanError(control.label),
+          simT().humanErrorCleared,
+          3.5,
+        );
+      }
+    }
+
+    if (
+      this.difficulty >= 3 &&
+      !this.firedDifficultyEvents.has("power-outage") &&
+      this.elapsed >= this.level.durationSec * 0.62
+    ) {
+      this.firedDifficultyEvents.add("power-outage");
+      this.startStop(simT().powerOutage, simT().powerRestored, 7);
+    }
+  }
+
+  private startStop(message: string, cleared: string, duration: number): void {
+    this.activeStop = {
+      until: this.elapsed + duration,
+      message,
+      cleared,
+    };
+    this.pushLog(message);
+  }
+
+  private resolveActiveStop(): void {
+    if (!this.activeStop || this.elapsed < this.activeStop.until) return;
+    this.pushLog(this.activeStop.cleared);
+    this.activeStop = null;
+    this.incidentsHandled += 1;
+  }
+
   private finish(): void {
     this.finished = true;
     this.running = false;
@@ -203,6 +279,7 @@ export class LineSimulator {
       oeePct: Math.round(oee * 10) / 10,
       score: Math.max(0, score),
       passed,
+      incidentsHandled: this.incidentsHandled,
     };
 
     this.pushLog(

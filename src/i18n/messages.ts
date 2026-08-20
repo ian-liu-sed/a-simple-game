@@ -1,5 +1,5 @@
 import type { Lang } from "./locale";
-import type { EquipmentId } from "../game/types";
+import type { DifficultyTier, EquipmentId } from "../game/types";
 
 export interface UiMessages {
   tagline: string;
@@ -73,16 +73,56 @@ export interface LevelMessages {
   events: Record<string, string>;
 }
 
+export interface StoryMessages {
+  difficulty: Record<DifficultyTier, string>;
+  difficultyDetail: Record<DifficultyTier, string>;
+  campaignStatus: string;
+  cooperation: string;
+  activeHold: string;
+  failureReminder: string;
+  failureBody: (count: number, remaining: number) => string;
+  enterHold: string;
+  incidentsHandled: string;
+  holdTitle: string;
+  holdBody: string;
+  holdReason: string;
+  holdClock: string;
+  recoveryPlan: string;
+  completed: string;
+  callClient: string;
+  holdActions: Array<{ title: string; body: string }>;
+  negotiationTitle: string;
+  negotiationLead: string;
+  clientTrust: string;
+  next: string;
+  negotiationRounds: Array<{
+    prompt: string;
+    choices: Array<{ label: string; feedback: string; trust: number }>;
+  }>;
+  successTitle: string;
+  successQuote: string;
+  successBody: string;
+  nextCooperation: string;
+  negotiationFailed: string;
+  negotiationFailedBody: string;
+  retryNegotiation: string;
+}
+
 export interface Pack {
   ui: UiMessages;
   equipment: Record<EquipmentId, EquipMessages>;
   levels: Record<string, LevelMessages>;
+  story: StoryMessages;
   sim: {
     lineArmed: (title: string) => string;
     runStarted: string;
     outsideWindow: (label: string) => string;
     batchReleased: (oee: number) => string;
     batchHeld: (oee: number) => string;
+    humanError: (label: string) => string;
+    humanErrorCleared: string;
+    powerOutage: string;
+    powerRestored: string;
   };
 }
 
@@ -277,12 +317,138 @@ const en: Pack = {
       },
     },
   },
+  story: {
+    difficulty: {
+      1: "Standard",
+      2: "Human factor",
+      3: "Resilience drill",
+    },
+    difficultyDetail: {
+      1: "Process disturbances only",
+      2: "Human errors stop the line and shift a parameter",
+      3: "Human errors plus an unplanned power outage",
+    },
+    campaignStatus: "Operations campaign",
+    cooperation: "Client cooperations",
+    activeHold: "LINE HOLD",
+    failureReminder: "Production failure reminder",
+    failureBody: (count, remaining) =>
+      remaining > 0
+        ? `${count}/3 failed batches on this line. ${remaining} more failure${remaining === 1 ? "" : "s"} will trigger a one-hour production hold.`
+        : `${count}/3 failed batches. This line is now on a one-hour production hold and the client must be contacted.`,
+    enterHold: "Start 60-minute recovery",
+    incidentsHandled: "Incidents handled",
+    holdTitle: "Production line on hold",
+    holdBody:
+      "Three failed batches triggered a controlled one-hour stop. Contain the risk, establish the cause, and prepare an honest client update before production can resume.",
+    holdReason: "3 consecutive failed batches",
+    holdClock: "Hold elapsed",
+    recoveryPlan: "Recovery checklist",
+    completed: "Completed",
+    callClient: "Call the client",
+    holdActions: [
+      {
+        title: "Quarantine the affected batch",
+        body: "Secure materials, samples, and electronic records for QA review.",
+      },
+      {
+        title: "Verify utilities and root cause",
+        body: "Check power, interlocks, operator actions, and parameter history.",
+      },
+      {
+        title: "Approve a CAPA restart plan",
+        body: "Define QA gates, restart checks, and a credible delivery scenario.",
+      },
+    ],
+    negotiationTitle: "Client recovery call",
+    negotiationLead:
+      "Protect the relationship with facts, accountable actions, and realistic commitments. Your choices change client trust.",
+    clientTrust: "Client trust",
+    next: "Continue call",
+    negotiationRounds: [
+      {
+        prompt: "The client asks why the promised production slot failed. How do you open?",
+        choices: [
+          {
+            label: "Share the known facts, confirm the hold, and commit to the next update time.",
+            feedback: "The client values the transparent timeline and clear ownership.",
+            trust: 20,
+          },
+          {
+            label: "Promise shipment tomorrow before the investigation is complete.",
+            feedback: "An unsupported promise makes the recovery plan feel unreliable.",
+            trust: -20,
+          },
+          {
+            label: "Blame the operator and utility supplier.",
+            feedback: "Deflecting responsibility reduces confidence in your quality system.",
+            trust: -10,
+          },
+        ],
+      },
+      {
+        prompt: "What recovery commitment do you offer?",
+        choices: [
+          {
+            label: "A staged QA-approved restart, verification samples, and a revised ETA.",
+            feedback: "A gated restart protects quality while restoring delivery confidence.",
+            trust: 20,
+          },
+          {
+            label: "Restart at maximum speed now and inspect the batch later.",
+            feedback: "Speed without release controls increases the client's risk.",
+            trust: -20,
+          },
+          {
+            label: "Wait for a perfect answer and provide no interim updates.",
+            feedback: "Silence creates uncertainty even when the investigation is careful.",
+            trust: -5,
+          },
+        ],
+      },
+      {
+        prompt: "How will you protect the next cooperation?",
+        choices: [
+          {
+            label: "Offer joint milestone reviews, visible CAPA evidence, and contingency capacity.",
+            feedback: "Shared evidence turns the incident into a stronger operating partnership.",
+            trust: 20,
+          },
+          {
+            label: "Offer a discount without changing the recovery controls.",
+            feedback: "Commercial relief helps, but it does not prevent another interruption.",
+            trust: 0,
+          },
+          {
+            label: "Report only major deviations in the next campaign.",
+            feedback: "Selective reporting is incompatible with a trusted GMP relationship.",
+            trust: -25,
+          },
+        ],
+      },
+    ],
+    successTitle: "Client confidence restored",
+    successQuote:
+      "Your team handled a difficult stop with clarity and discipline. We want to plan the next campaign together.",
+    successBody:
+      "The client records a positive recovery review. A new cooperation is available, with tougher operating conditions.",
+    nextCooperation: "Start next cooperation",
+    negotiationFailed: "Client needs a stronger plan",
+    negotiationFailedBody:
+      "The line remains on hold. Rework the commitments and try the recovery call again.",
+    retryNegotiation: "Prepare a better offer",
+  },
   sim: {
     lineArmed: (title) => `Line armed: ${title}`,
     runStarted: "Run started. Monitor process window.",
     outsideWindow: (label) => `${label} outside process window`,
     batchReleased: (oee) => `Batch released. OEE ${oee}%`,
     batchHeld: (oee) => `Batch held. OEE ${oee}% — adjust process window.`,
+    humanError: (label) =>
+      `Human error: incorrect ${label} entry. Line stopped for verification.`,
+    humanErrorCleared: "Operator check complete. Line restart authorized.",
+    powerOutage: "Power outage: line stopped. Backup utilities are being verified.",
+    powerRestored: "Power restored. Safety interlocks reset and line restarted.",
   },
 };
 
@@ -476,12 +642,134 @@ const zh: Pack = {
       },
     },
   },
+  story: {
+    difficulty: {
+      1: "标准",
+      2: "人为因素",
+      3: "韧性演练",
+    },
+    difficultyDetail: {
+      1: "仅有工艺扰动",
+      2: "人为错误会停线并改变参数",
+      3: "人为错误加突发停电",
+    },
+    campaignStatus: "运营战役",
+    cooperation: "客户合作次数",
+    activeHold: "产线暂扣",
+    failureReminder: "生产失败提醒",
+    failureBody: (count, remaining) =>
+      remaining > 0
+        ? `该产线已失败 ${count}/3 个批次。再失败 ${remaining} 次将触发一小时生产暂扣。`
+        : `该产线已失败 ${count}/3 个批次。现已进入一小时生产暂扣，必须联系客户。`,
+    enterHold: "开始 60 分钟恢复流程",
+    incidentsHandled: "已处理事件",
+    holdTitle: "生产线暂扣中",
+    holdBody:
+      "连续三个批次失败触发受控停线一小时。恢复生产前，请控制风险、查明原因，并准备诚实的客户说明。",
+    holdReason: "连续 3 个批次失败",
+    holdClock: "暂扣已用时间",
+    recoveryPlan: "恢复检查清单",
+    completed: "已完成",
+    callClient: "致电客户",
+    holdActions: [
+      {
+        title: "隔离受影响批次",
+        body: "封存物料、样品和电子记录，交由 QA 审核。",
+      },
+      {
+        title: "核查公用系统与根因",
+        body: "检查供电、联锁、人员操作和参数历史。",
+      },
+      {
+        title: "批准 CAPA 重启计划",
+        body: "明确 QA 关口、重启检查和可信的交付方案。",
+      },
+    ],
+    negotiationTitle: "客户恢复沟通",
+    negotiationLead:
+      "用事实、负责的行动和现实承诺维护客户关系。你的选择会改变客户信任度。",
+    clientTrust: "客户信任度",
+    next: "继续沟通",
+    negotiationRounds: [
+      {
+        prompt: "客户询问承诺的生产档期为何失败。你如何开场？",
+        choices: [
+          {
+            label: "说明已知事实，确认暂扣，并承诺下一次更新时间。",
+            feedback: "透明的时间线与明确责任让客户感到安心。",
+            trust: 20,
+          },
+          {
+            label: "调查完成前就承诺明天交货。",
+            feedback: "缺乏依据的承诺让恢复计划显得不可靠。",
+            trust: -20,
+          },
+          {
+            label: "将责任推给操作员和公用系统供应商。",
+            feedback: "推卸责任会降低客户对质量体系的信心。",
+            trust: -10,
+          },
+        ],
+      },
+      {
+        prompt: "你会提供什么恢复承诺？",
+        choices: [
+          {
+            label: "分阶段经 QA 批准重启，提供验证样品和更新后的交期。",
+            feedback: "设置关口的重启方案既保护质量，也恢复交付信心。",
+            trust: 20,
+          },
+          {
+            label: "立即全速重启，批次完成后再检验。",
+            feedback: "没有放行控制的速度会增加客户风险。",
+            trust: -20,
+          },
+          {
+            label: "等到答案完美再说，中间不提供更新。",
+            feedback: "即使调查谨慎，沉默仍会制造不确定性。",
+            trust: -5,
+          },
+        ],
+      },
+      {
+        prompt: "你将如何保障下一次合作？",
+        choices: [
+          {
+            label: "共同审核里程碑、公开 CAPA 证据，并提供备用产能。",
+            feedback: "共享证据能把事故转化为更强的运营合作关系。",
+            trust: 20,
+          },
+          {
+            label: "只提供折扣，不改变恢复控制措施。",
+            feedback: "商业补偿有帮助，但不能防止再次中断。",
+            trust: 0,
+          },
+          {
+            label: "下次生产只报告重大偏差。",
+            feedback: "选择性报告不符合可信赖的 GMP 合作关系。",
+            trust: -25,
+          },
+        ],
+      },
+    ],
+    successTitle: "客户信心已恢复",
+    successQuote: "你们清晰而严谨地处理了这次困难停线。我们愿意共同规划下一轮生产。",
+    successBody: "客户给出积极的恢复评价。新的合作已开启，运行条件也将更具挑战。",
+    nextCooperation: "开始下一次合作",
+    negotiationFailed: "客户需要更有力的方案",
+    negotiationFailedBody: "产线继续暂扣。重新制定承诺后，再次进行恢复沟通。",
+    retryNegotiation: "准备更好的方案",
+  },
   sim: {
     lineArmed: (title) => `产线就绪：${title}`,
     runStarted: "运行开始。监控工艺窗口。",
     outsideWindow: (label) => `${label} 偏离工艺窗口`,
     batchReleased: (oee) => `批次放行。OEE ${oee}%`,
     batchHeld: (oee) => `批次暂扣。OEE ${oee}% — 请回调工艺窗口。`,
+    humanError: (label) => `人为错误：${label} 输入不正确。产线停机核查。`,
+    humanErrorCleared: "人员核查完成。已批准产线重启。",
+    powerOutage: "突发停电：产线停止。正在核查备用公用系统。",
+    powerRestored: "供电恢复。安全联锁已复位，产线重新启动。",
   },
 };
 
