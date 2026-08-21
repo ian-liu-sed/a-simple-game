@@ -71,6 +71,7 @@ export class LineSimulator {
     controlKey?: string;
   } | null = null;
   private autoCorrections: Array<{ at: number; controlKey: string }> = [];
+  private attentionControls = new Set<string>();
   private incidentsHandled = 0;
 
   constructor(level: LevelDef, difficulty: DifficultyTier = 1) {
@@ -100,6 +101,11 @@ export class LineSimulator {
     const def = this.level.controls.find((c) => c.key === key);
     if (!def) return;
     this.controls[key] = clamp(value, def.min, def.max);
+    if (deviation(this.controls[key], def) <= 1) {
+      this.attentionControls.delete(key);
+    } else {
+      this.attentionControls.add(key);
+    }
   }
 
   getControls(): Record<string, number> {
@@ -136,7 +142,7 @@ export class LineSimulator {
         s.throughput = 0;
         s.health = clamp(s.health - dt * 2.5, 20, 100);
       }
-    } else if (worst && worst.d > 1.6) {
+    } else if (worst && worst.d > 1) {
       this.alarm = simT().outsideWindow(worst.c.label);
       this.downtime += dt * 0.35;
       for (const s of this.stations) {
@@ -191,6 +197,7 @@ export class LineSimulator {
             def.min,
             def.max,
           );
+          this.attentionControls.add(def.key);
           if (this.difficulty === 1) {
             this.autoCorrections.push({
               at: this.elapsed + 2,
@@ -204,39 +211,55 @@ export class LineSimulator {
   }
 
   private handleDifficultyEvents(): void {
-    if (
-      !this.firedDifficultyEvents.has("human-error") &&
-      this.elapsed >= this.level.durationSec * 0.32
-    ) {
-      this.firedDifficultyEvents.add("human-error");
-      const control = this.level.controls[0];
-      if (control) {
-        const direction = this.controls[control.key] <= control.ideal ? 1 : -1;
-        this.controls[control.key] = clamp(
-          alignToStep(
-            control.ideal + direction * control.tolerance * 2.1,
-            control,
-          ),
-          control.min,
-          control.max,
-        );
-        this.startStop(
-          simT().humanError(control.label),
-          simT().humanErrorCleared,
-          3.5,
-          control.key,
-        );
+    const humanErrorSchedule =
+      this.difficulty === 1
+        ? [0.24, 0.66]
+        : this.difficulty === 2
+          ? [0.18, 0.48, 0.78]
+          : [0.18, 0.42, 0.82];
+
+    for (let index = 0; index < humanErrorSchedule.length; index += 1) {
+      const key = `human-error-${index}`;
+      if (this.firedDifficultyEvents.has(key)) continue;
+      if (this.elapsed < this.level.durationSec * humanErrorSchedule[index]) {
+        continue;
       }
+      if (this.activeStop) break;
+      this.firedDifficultyEvents.add(key);
+      this.triggerHumanError(index);
+      break;
     }
 
     if (
       this.difficulty >= 3 &&
+      !this.activeStop &&
       !this.firedDifficultyEvents.has("power-outage") &&
       this.elapsed >= this.level.durationSec * 0.62
     ) {
       this.firedDifficultyEvents.add("power-outage");
       this.startStop(simT().powerOutage, simT().powerRestored, 7);
     }
+  }
+
+  private triggerHumanError(index: number): void {
+    const control = this.level.controls[index % this.level.controls.length];
+    if (!control) return;
+    const direction = this.controls[control.key] <= control.ideal ? 1 : -1;
+    this.controls[control.key] = clamp(
+      alignToStep(
+        control.ideal + direction * control.tolerance * 2.1,
+        control,
+      ),
+      control.min,
+      control.max,
+    );
+    this.attentionControls.add(control.key);
+    this.startStop(
+      simT().humanError(control.label),
+      simT().humanErrorCleared,
+      3.5,
+      control.key,
+    );
   }
 
   private startStop(
@@ -265,6 +288,7 @@ export class LineSimulator {
     if (!control) return;
     if (this.difficulty === 1) {
       this.controls[control.key] = control.ideal;
+      this.attentionControls.delete(control.key);
       this.pushLog(simT().parameterAutoRestored(control.label));
     } else {
       this.pushLog(simT().manualCorrectionRequired(control.label));
@@ -282,6 +306,7 @@ export class LineSimulator {
       );
       if (!control) continue;
       this.controls[control.key] = control.ideal;
+      this.attentionControls.delete(control.key);
       this.incidentsHandled += 1;
       this.pushLog(simT().parameterAutoRestored(control.label));
     }
@@ -344,6 +369,7 @@ export class LineSimulator {
       remaining: Math.max(0, this.level.durationSec - this.elapsed),
       stations: this.stations.map((s) => ({ ...s })),
       controls: { ...this.controls },
+      attentionControls: [...this.attentionControls],
       produced: Math.floor(this.produced),
       rejected: Math.floor(this.rejected),
       target: this.level.targetUnits,

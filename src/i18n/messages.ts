@@ -56,6 +56,7 @@ export interface UiMessages {
   statusRunning: string;
   statusAlarm: string;
   statusDone: string;
+  adjustNow: string;
 }
 
 export interface EquipMessages {
@@ -187,6 +188,7 @@ const en: Pack = {
     statusRunning: "RUNNING",
     statusAlarm: "ALARM",
     statusDone: "DONE",
+    adjustNow: "ADJUST NOW",
   },
   equipment: {
     "tablet-press": {
@@ -323,14 +325,14 @@ const en: Pack = {
   },
   story: {
     difficulty: {
-      1: "Low",
-      2: "Medium",
-      3: "High",
+      1: "Assistant",
+      2: "Expert",
+      3: "Legend",
     },
     difficultyDetail: {
-      1: "Auto Assist restores parameters after human errors and disturbances",
-      2: "Human errors stop the line; you must restore changed parameters",
-      3: "Manual parameter recovery plus an unplanned power outage",
+      1: "Auto Assist restores parameters through two human-error events",
+      2: "Three human errors; diagnose and restore parameters yourself",
+      3: "Three human errors, manual recovery, and an unplanned power outage",
     },
     chooseDifficulty: "Choose difficulty",
     campaignStatus: "Operations campaign",
@@ -520,6 +522,7 @@ const zh: Pack = {
     statusRunning: "运行",
     statusAlarm: "报警",
     statusDone: "完成",
+    adjustNow: "立即调整",
   },
   equipment: {
     "tablet-press": {
@@ -655,14 +658,14 @@ const zh: Pack = {
   },
   story: {
     difficulty: {
-      1: "低",
-      2: "中",
-      3: "高",
+      1: "助手",
+      2: "专家",
+      3: "传奇",
     },
     difficultyDetail: {
-      1: "人为错误或扰动后，自动助手会恢复参数",
-      2: "人为错误会停线，参数需要你手动恢复",
-      3: "手动恢复参数，并应对突发停电",
+      1: "两次人为错误事件，自动助手会恢复参数",
+      2: "三次人为错误，需要你自行诊断并恢复参数",
+      3: "三次人为错误、手动恢复参数，并应对突发停电",
     },
     chooseDifficulty: "选择难度",
     campaignStatus: "运营战役",

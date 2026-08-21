@@ -75,6 +75,7 @@ export interface SimSnapshot {
   remaining: number;
   stations: StationState[];
   controls: Record<string, number>;
+  attentionControls: string[];
   produced: number;
   rejected: number;
   target: number;

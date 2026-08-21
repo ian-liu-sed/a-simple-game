@@ -49,17 +49,19 @@ try {
   const lowRun = new LineSimulator(LEVELS[0], 1);
   lowRun.start();
   let lowSnapshot;
-  for (let elapsed = 0; elapsed < 17.8; elapsed += 0.1) {
+  for (let elapsed = 0; elapsed < 13.4; elapsed += 0.1) {
     lowSnapshot = lowRun.tick(0.1);
   }
   assert.match(lowSnapshot.alarm, /Human error/);
   const force = LEVELS[0].controls.find((control) => control.key === "force");
   assert.ok(force);
   assert.notEqual(lowSnapshot.controls.force, force.ideal);
+  assert.ok(lowSnapshot.attentionControls.includes("force"));
   for (let elapsed = 0; elapsed < 3.6; elapsed += 0.1) {
     lowSnapshot = lowRun.tick(0.1);
   }
   assert.equal(lowSnapshot.controls.force, force.ideal);
+  assert.ok(!lowSnapshot.attentionControls.includes("force"));
   assert.ok(lowSnapshot.log.some((message) => message.includes("Auto Assist restored")));
 
   const lowDisturbanceRun = new LineSimulator(LEVELS[1], 1);
@@ -71,6 +73,7 @@ try {
   const tamp = LEVELS[1].controls.find((control) => control.key === "tamp");
   assert.ok(tamp);
   assert.equal(lowDisturbanceSnapshot.controls.tamp, tamp.ideal);
+  assert.ok(!lowDisturbanceSnapshot.attentionControls.includes("tamp"));
 
   const humanRun = new LineSimulator(LEVELS[0], 2);
   humanRun.start();
@@ -88,6 +91,21 @@ try {
       message.includes("Manually restore Main compression"),
     ),
   );
+  assert.ok(humanSnapshot.attentionControls.includes("force"));
+  humanRun.setControl("force", force.ideal);
+  humanSnapshot = humanRun.tick(0.1);
+  assert.ok(!humanSnapshot.attentionControls.includes("force"));
+  while (humanSnapshot.elapsed < LEVELS[0].durationSec * 0.49) {
+    humanSnapshot = humanRun.tick(0.1);
+  }
+  assert.ok(humanSnapshot.attentionControls.includes("rpm"));
+  const rpm = LEVELS[0].controls.find((control) => control.key === "rpm");
+  assert.ok(rpm);
+  humanRun.setControl("rpm", rpm.ideal);
+  while (!humanSnapshot.finished) {
+    humanSnapshot = humanRun.tick(0.1);
+  }
+  assert.equal(humanSnapshot.result.incidentsHandled, 3);
 
   const resilienceRun = new LineSimulator(LEVELS[0], 3);
   resilienceRun.start();
@@ -105,10 +123,10 @@ try {
   while (!resilienceSnapshot.finished) {
     resilienceSnapshot = resilienceRun.tick(0.1);
   }
-  assert.equal(resilienceSnapshot.result.incidentsHandled, 2);
+  assert.equal(resilienceSnapshot.result.incidentsHandled, 4);
 
   console.log(
-    "Smoke tests passed: difficulty selection, Low auto-recovery, Medium manual recovery, High power outage.",
+    "Smoke tests passed: Assistant auto-recovery, Expert warnings and manual recovery, Legend power outage and frequent errors.",
   );
 } finally {
   await vite.close();

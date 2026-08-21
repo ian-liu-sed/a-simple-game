@@ -537,6 +537,22 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.control.attention {
+  border-color: #ef4444;
+  background: linear-gradient(110deg, rgba(127, 29, 29, 0.38), rgba(220, 38, 38, 0.1));
+  animation: parameterAlert 1s ease-in-out infinite alternate;
+}
+
+@keyframes parameterAlert {
+  from {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.6), 0 0 22px rgba(220, 38, 38, 0.24);
+  }
 }
 
 .control header {
@@ -545,6 +561,24 @@ button:disabled {
   gap: 8px;
   margin-bottom: 8px;
   font-size: 0.9rem;
+}
+
+.control-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.parameter-warning {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
 }
 
 .control .ideal {
@@ -556,6 +590,10 @@ button:disabled {
 .control input[type="range"] {
   width: 100%;
   accent-color: var(--accent-2);
+}
+
+.control.attention input[type="range"] {
+  accent-color: #ef4444;
 }
 
 .progress {

@@ -400,10 +400,11 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
   const controls = level.controls
     .map((c) => {
       const v = s.controls[c.key] ?? c.ideal;
+      const needsAttention = s.attentionControls.includes(c.key);
       return `
-        <div class="control">
+        <div class="control${needsAttention ? " attention" : ""}" data-control-key="${c.key}">
           <header>
-            <span>${c.label}</span>
+            <span class="control-name">${c.label}<strong class="parameter-warning" data-parameter-warning="${c.key}" ${needsAttention ? "" : "hidden"}>${ui.adjustNow}</strong></span>
             <span class="ideal">${ui.ideal} ${c.ideal}${c.unit} ±${c.tolerance}</span>
           </header>
           <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" />
@@ -503,6 +504,13 @@ function patchPlay(s: SimSnapshot): void {
     input.value = String(s.controls[key]);
     const value = document.querySelector<HTMLElement>(`[data-val="${key}"]`);
     if (value && def) value.textContent = formatVal(s.controls[key], def.step);
+  });
+  document.querySelectorAll<HTMLElement>("[data-control-key]").forEach((control) => {
+    const key = control.dataset.controlKey;
+    const needsAttention = Boolean(key && s.attentionControls.includes(key));
+    control.classList.toggle("attention", needsAttention);
+    const warning = control.querySelector<HTMLElement>("[data-parameter-warning]");
+    if (warning) warning.hidden = !needsAttention;
   });
   document.querySelectorAll<HTMLElement>("[data-station]").forEach((el) => {
     const id = el.dataset.station;
