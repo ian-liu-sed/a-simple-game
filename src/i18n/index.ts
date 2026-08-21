@@ -14,6 +14,10 @@ export function simT() {
   return pack(getLang()).sim;
 }
 
+export function storyT() {
+  return pack(getLang()).story;
+}
+
 export function equipT(id: EquipmentId) {
   const base = EQUIPMENT[id];
   const loc = pack(getLang()).equipment[id];

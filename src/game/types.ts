@@ -10,6 +10,8 @@ export type EquipmentId =
 
 export type ProductForm = "tablet" | "capsule";
 
+export type DifficultyTier = 1 | 2 | 3;
+
 export interface EquipmentDef {
   id: EquipmentId;
   name: string;
@@ -65,6 +67,7 @@ export interface RunStats {
   oeePct: number;
   score: number;
   passed: boolean;
+  incidentsHandled: number;
 }
 
 export interface SimSnapshot {
@@ -72,6 +75,7 @@ export interface SimSnapshot {
   remaining: number;
   stations: StationState[];
   controls: Record<string, number>;
+  attentionControls: string[];
   produced: number;
   rejected: number;
   target: number;

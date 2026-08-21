@@ -1,5 +1,6 @@
 import type { Lang } from "./locale";
-import type { EquipmentId } from "../game/types";
+import type { DifficultyTier, EquipmentId } from "../game/types";
+import type { BadgeId } from "../game/badges";
 
 export interface UiMessages {
   tagline: string;
@@ -34,11 +35,14 @@ export interface UiMessages {
   operatorTips: string;
   processControls: string;
   eventLog: string;
-  ideal: string;
   health: string;
   batchReport: string;
   released: string;
   held: string;
+  clientSatisfied: string;
+  clientSatisfiedBody: string;
+  clientDisappointed: string;
+  clientDisappointedBody: string;
   score: string;
   produced: string;
   quality: string;
@@ -56,6 +60,9 @@ export interface UiMessages {
   statusRunning: string;
   statusAlarm: string;
   statusDone: string;
+  adjustNow: string;
+  decrease: string;
+  increase: string;
 }
 
 export interface EquipMessages {
@@ -73,16 +80,71 @@ export interface LevelMessages {
   events: Record<string, string>;
 }
 
+export interface StoryMessages {
+  difficulty: Record<DifficultyTier, string>;
+  difficultyDetail: Record<DifficultyTier, string>;
+  chooseDifficulty: string;
+  campaignStatus: string;
+  cookieNotice: string;
+  cooperation: string;
+  badgeCenterTitle: string;
+  badgeCenterLead: string;
+  badgeUnlocked: string;
+  badgeLocked: string;
+  badgeEarnedTitle: string;
+  missionBadgeTarget: string;
+  badges: Record<BadgeId, { name: string; criteria: string }>;
+  activeHold: string;
+  failureReminder: string;
+  failureBody: (count: number, remaining: number) => string;
+  enterHold: string;
+  incidentsHandled: string;
+  holdTitle: string;
+  holdBody: string;
+  holdReason: string;
+  holdClock: string;
+  holdAccessHint: string;
+  holdWaiting: string;
+  holdReady: string;
+  recoveryPlan: string;
+  completed: string;
+  callClient: string;
+  holdActions: Array<{ title: string; body: string }>;
+  negotiationTitle: string;
+  negotiationLead: string;
+  clientTrust: string;
+  next: string;
+  negotiationRounds: Array<{
+    prompt: string;
+    choices: Array<{ label: string; feedback: string; trust: number }>;
+  }>;
+  successTitle: string;
+  successQuote: string;
+  successBody: string;
+  nextCooperation: string;
+  negotiationFailed: string;
+  negotiationFailedBody: string;
+  retryNegotiation: string;
+}
+
 export interface Pack {
   ui: UiMessages;
   equipment: Record<EquipmentId, EquipMessages>;
   levels: Record<string, LevelMessages>;
+  story: StoryMessages;
   sim: {
     lineArmed: (title: string) => string;
     runStarted: string;
     outsideWindow: (label: string) => string;
     batchReleased: (oee: number) => string;
     batchHeld: (oee: number) => string;
+    humanError: (label: string) => string;
+    humanErrorCleared: string;
+    powerOutage: string;
+    powerRestored: string;
+    autoAssistQueued: (label: string) => string;
+    parameterAutoRestored: (label: string) => string;
+    manualCorrectionRequired: (label: string) => string;
   };
 }
 
@@ -121,11 +183,14 @@ const en: Pack = {
     operatorTips: "Operator tips",
     processControls: "Process controls",
     eventLog: "Event log",
-    ideal: "ideal",
     health: "health",
     batchReport: "Batch report",
     released: "RELEASED — process capable",
     held: "HELD — out of window",
+    clientSatisfied: "Client satisfied",
+    clientSatisfiedBody: "The batch met expectations. The client is ready for the next mission.",
+    clientDisappointed: "Client disappointed",
+    clientDisappointedBody: "The batch missed expectations. Recover the process and rebuild confidence.",
     score: "Score",
     produced: "Produced",
     quality: "Quality",
@@ -143,6 +208,9 @@ const en: Pack = {
     statusRunning: "RUNNING",
     statusAlarm: "ALARM",
     statusDone: "DONE",
+    adjustNow: "ADJUST NOW",
+    decrease: "Decrease",
+    increase: "Increase",
   },
   equipment: {
     "tablet-press": {
@@ -277,12 +345,195 @@ const en: Pack = {
       },
     },
   },
+  story: {
+    difficulty: {
+      1: "Assistant",
+      2: "Expert",
+      3: "Legend",
+    },
+    difficultyDetail: {
+      1: "Auto Assist restores affected parameters after unexpected human errors",
+      2: "Random incidents affect one or two parameters; precise manual recovery required",
+      3: "Frequent random incidents cause multi-parameter drift, precision recovery, and a power outage",
+    },
+    chooseDifficulty: "Choose difficulty",
+    campaignStatus: "Operations campaign",
+    cookieNotice: "Progress and one-hour mission holds are saved in a first-party cookie on this browser.",
+    cooperation: "Client cooperations",
+    badgeCenterTitle: "Badge workshop",
+    badgeCenterLead:
+      "Badges demand stable production, not one lucky number. Review the exact criteria and build a stronger line.",
+    badgeUnlocked: "Unlocked",
+    badgeLocked: "Locked",
+    badgeEarnedTitle: "New badges earned",
+    missionBadgeTarget: "Mission badge target",
+    badges: {
+      "quality-guardian": {
+        name: "Quality Guardian",
+        criteria: "Pass any mission with at least 99.5% quality and 82% OEE.",
+      },
+      "oee-elite": {
+        name: "OEE Elite",
+        criteria: "Pass any mission with at least 93% OEE and 98.5% quality.",
+      },
+      "recovery-ace": {
+        name: "Recovery Ace",
+        criteria: "On Expert or Legend, pass after 3+ incidents with at least 78% OEE.",
+      },
+      "press-master": {
+        name: "Press Master",
+        criteria: "Level 1: pass with at least 99% quality and 88% OEE.",
+      },
+      "capsule-specialist": {
+        name: "Capsule Specialist",
+        criteria: "Level 2: pass with at least 99.5% quality and 90% OEE.",
+      },
+      "packaging-guardian": {
+        name: "Packaging Guardian",
+        criteria: "Level 3: pass with at least 98.5% quality and 87% OEE.",
+      },
+      "blister-specialist": {
+        name: "Blister Specialist",
+        criteria: "Level 4: pass with at least 99% quality and 89% OEE.",
+      },
+      "full-line-commander": {
+        name: "Full-Line Commander",
+        criteria: "Level 5 on Expert or Legend: pass with 98.5% quality and 86% OEE.",
+      },
+      "campaign-master": {
+        name: "Campaign Master",
+        criteria: "Unlock all five mission-specific badges.",
+      },
+    },
+    activeHold: "LINE HOLD",
+    failureReminder: "Production failure reminder",
+    failureBody: (count, remaining) =>
+      remaining > 0
+        ? `${count}/3 failed batches on this line. ${remaining} more failure${remaining === 1 ? "" : "s"} will trigger a one-hour production hold.`
+        : `${count}/3 failed batches. This mission is locked on this browser for one real hour before the client recovery call.`,
+    enterHold: "View one-hour hold",
+    incidentsHandled: "Incidents handled",
+    holdTitle: "Production line on hold",
+    holdBody:
+      "Three failed batches triggered a real one-hour stop stored in this browser's campaign cookie. Complete the recovery work now; the client call unlocks when the timer expires.",
+    holdReason: "3 consecutive failed batches",
+    holdClock: "Hold remaining",
+    holdAccessHint:
+      "This mission cannot run on this browser during the hold. You can choose another mission, wait for the timer, or continue from another device/browser.",
+    holdWaiting: "Client recovery remains locked until the full one-hour timer reaches zero.",
+    holdReady: "The one-hour stop is complete. Finish the checklist to unlock the client call.",
+    recoveryPlan: "Recovery checklist",
+    completed: "Completed",
+    callClient: "Call the client",
+    holdActions: [
+      {
+        title: "Quarantine the affected batch",
+        body: "Secure materials, samples, and electronic records for QA review.",
+      },
+      {
+        title: "Verify utilities and root cause",
+        body: "Check power, interlocks, operator actions, and parameter history.",
+      },
+      {
+        title: "Approve a CAPA restart plan",
+        body: "Define QA gates, restart checks, and a credible delivery scenario.",
+      },
+    ],
+    negotiationTitle: "Client recovery call",
+    negotiationLead:
+      "Protect the relationship with facts, accountable actions, and realistic commitments. Your choices change client trust.",
+    clientTrust: "Client trust",
+    next: "Continue call",
+    negotiationRounds: [
+      {
+        prompt: "The client asks why the promised production slot failed. How do you open?",
+        choices: [
+          {
+            label: "Share the known facts, confirm the hold, and commit to the next update time.",
+            feedback: "The client values the transparent timeline and clear ownership.",
+            trust: 20,
+          },
+          {
+            label: "Promise shipment tomorrow before the investigation is complete.",
+            feedback: "An unsupported promise makes the recovery plan feel unreliable.",
+            trust: -20,
+          },
+          {
+            label: "Blame the operator and utility supplier.",
+            feedback: "Deflecting responsibility reduces confidence in your quality system.",
+            trust: -10,
+          },
+        ],
+      },
+      {
+        prompt: "What recovery commitment do you offer?",
+        choices: [
+          {
+            label: "A staged QA-approved restart, verification samples, and a revised ETA.",
+            feedback: "A gated restart protects quality while restoring delivery confidence.",
+            trust: 20,
+          },
+          {
+            label: "Restart at maximum speed now and inspect the batch later.",
+            feedback: "Speed without release controls increases the client's risk.",
+            trust: -20,
+          },
+          {
+            label: "Wait for a perfect answer and provide no interim updates.",
+            feedback: "Silence creates uncertainty even when the investigation is careful.",
+            trust: -5,
+          },
+        ],
+      },
+      {
+        prompt: "How will you protect the next cooperation?",
+        choices: [
+          {
+            label: "Offer joint milestone reviews, visible CAPA evidence, and contingency capacity.",
+            feedback: "Shared evidence turns the incident into a stronger operating partnership.",
+            trust: 20,
+          },
+          {
+            label: "Offer a discount without changing the recovery controls.",
+            feedback: "Commercial relief helps, but it does not prevent another interruption.",
+            trust: 0,
+          },
+          {
+            label: "Report only major deviations in the next campaign.",
+            feedback: "Selective reporting is incompatible with a trusted GMP relationship.",
+            trust: -25,
+          },
+        ],
+      },
+    ],
+    successTitle: "Client confidence restored",
+    successQuote:
+      "Your team handled a difficult stop with clarity and discipline. We want to plan the next campaign together.",
+    successBody:
+      "The client records a positive recovery review. A new cooperation is available, with tougher operating conditions.",
+    nextCooperation: "Start next cooperation",
+    negotiationFailed: "Client needs a stronger plan",
+    negotiationFailedBody:
+      "The line remains on hold. Rework the commitments and try the recovery call again.",
+    retryNegotiation: "Prepare a better offer",
+  },
   sim: {
     lineArmed: (title) => `Line armed: ${title}`,
     runStarted: "Run started. Monitor process window.",
     outsideWindow: (label) => `${label} outside process window`,
     batchReleased: (oee) => `Batch released. OEE ${oee}%`,
     batchHeld: (oee) => `Batch held. OEE ${oee}% — adjust process window.`,
+    humanError: (label) =>
+      `Human error: incorrect ${label} entry. Line stopped for verification.`,
+    humanErrorCleared: "Operator check complete. Line restart authorized.",
+    powerOutage: "Power outage: line stopped. Backup utilities are being verified.",
+    powerRestored: "Power restored. Safety interlocks reset and line restarted.",
+    autoAssistQueued: (label) =>
+      `Auto Assist detected ${label} drift and is preparing a correction.`,
+    parameterAutoRestored: (label) =>
+      `Auto Assist restored ${label} to its validated target.`,
+    manualCorrectionRequired: (label) =>
+      `Line restarted. Manually restore ${label} before rejects rise.`,
   },
 };
 
@@ -321,11 +572,14 @@ const zh: Pack = {
     operatorTips: "操作提示",
     processControls: "工艺控制",
     eventLog: "事件日志",
-    ideal: "理想值",
     health: "健康度",
     batchReport: "批次报告",
     released: "放行 — 工艺能力达标",
     held: "暂扣 — 偏离工艺窗口",
+    clientSatisfied: "客户满意",
+    clientSatisfiedBody: "本批次达到预期，客户愿意继续推进下一项任务。",
+    clientDisappointed: "客户失望",
+    clientDisappointedBody: "本批次未达到预期，请恢复工艺并重新建立客户信心。",
     score: "得分",
     produced: "产量",
     quality: "质量",
@@ -343,6 +597,9 @@ const zh: Pack = {
     statusRunning: "运行",
     statusAlarm: "报警",
     statusDone: "完成",
+    adjustNow: "立即调整",
+    decrease: "减小",
+    increase: "增大",
   },
   equipment: {
     "tablet-press": {
@@ -476,12 +733,187 @@ const zh: Pack = {
       },
     },
   },
+  story: {
+    difficulty: {
+      1: "助手",
+      2: "专家",
+      3: "传奇",
+    },
+    difficultyDetail: {
+      1: "突发人为错误后，自动助手会恢复受影响参数",
+      2: "随机事件影响一至两个参数，需精准手动恢复",
+      3: "频繁随机事件导致多参数同时漂移，需精准恢复并应对突发停电",
+    },
+    chooseDifficulty: "选择难度",
+    campaignStatus: "运营战役",
+    cookieNotice: "游戏进度和一小时任务暂扣会保存在此浏览器的第一方 Cookie 中。",
+    cooperation: "客户合作次数",
+    badgeCenterTitle: "徽章工坊",
+    badgeCenterLead: "徽章要求持续稳定生产，而不是一次幸运成绩。查看明确标准，逐步打造更强的产线。",
+    badgeUnlocked: "已解锁",
+    badgeLocked: "未解锁",
+    badgeEarnedTitle: "本次新获徽章",
+    missionBadgeTarget: "任务徽章标准",
+    badges: {
+      "quality-guardian": {
+        name: "质量守护者",
+        criteria: "任一任务通过，质量至少 99.5%，OEE 至少 82%。",
+      },
+      "oee-elite": {
+        name: "OEE 精英",
+        criteria: "任一任务通过，OEE 至少 93%，质量至少 98.5%。",
+      },
+      "recovery-ace": {
+        name: "恢复王牌",
+        criteria: "专家或传奇难度处理至少 3 次事件后通过，OEE 至少 78%。",
+      },
+      "press-master": {
+        name: "压片大师",
+        criteria: "第 1 关通过，质量至少 99%，OEE 至少 88%。",
+      },
+      "capsule-specialist": {
+        name: "胶囊专家",
+        criteria: "第 2 关通过，质量至少 99.5%，OEE 至少 90%。",
+      },
+      "packaging-guardian": {
+        name: "瓶装守卫",
+        criteria: "第 3 关通过，质量至少 98.5%，OEE 至少 87%。",
+      },
+      "blister-specialist": {
+        name: "泡罩专家",
+        criteria: "第 4 关通过，质量至少 99%，OEE 至少 89%。",
+      },
+      "full-line-commander": {
+        name: "全线指挥官",
+        criteria: "第 5 关专家或传奇难度通过，质量至少 98.5%，OEE 至少 86%。",
+      },
+      "campaign-master": {
+        name: "战役大师",
+        criteria: "解锁全部五枚任务专属徽章。",
+      },
+    },
+    activeHold: "产线暂扣",
+    failureReminder: "生产失败提醒",
+    failureBody: (count, remaining) =>
+      remaining > 0
+        ? `该产线已失败 ${count}/3 个批次。再失败 ${remaining} 次将触发一小时生产暂扣。`
+        : `该产线已失败 ${count}/3 个批次。此浏览器中的该任务将真实锁定一小时，之后才能联系客户恢复。`,
+    enterHold: "查看一小时暂扣",
+    incidentsHandled: "已处理事件",
+    holdTitle: "生产线暂扣中",
+    holdBody:
+      "连续三个批次失败触发真实停线一小时，时间会保存在此浏览器的游戏 Cookie 中。现在可完成恢复工作，倒计时结束后才能联系客户。",
+    holdReason: "连续 3 个批次失败",
+    holdClock: "暂扣剩余时间",
+    holdAccessHint:
+      "暂扣期间，此浏览器不能运行该任务。你可以选择其他任务、等待倒计时，或换用其他设备/浏览器继续。",
+    holdWaiting: "客户恢复流程仍被锁定，必须等待完整一小时倒计时结束。",
+    holdReady: "一小时停线已结束。完成检查清单即可联系客户。",
+    recoveryPlan: "恢复检查清单",
+    completed: "已完成",
+    callClient: "致电客户",
+    holdActions: [
+      {
+        title: "隔离受影响批次",
+        body: "封存物料、样品和电子记录，交由 QA 审核。",
+      },
+      {
+        title: "核查公用系统与根因",
+        body: "检查供电、联锁、人员操作和参数历史。",
+      },
+      {
+        title: "批准 CAPA 重启计划",
+        body: "明确 QA 关口、重启检查和可信的交付方案。",
+      },
+    ],
+    negotiationTitle: "客户恢复沟通",
+    negotiationLead:
+      "用事实、负责的行动和现实承诺维护客户关系。你的选择会改变客户信任度。",
+    clientTrust: "客户信任度",
+    next: "继续沟通",
+    negotiationRounds: [
+      {
+        prompt: "客户询问承诺的生产档期为何失败。你如何开场？",
+        choices: [
+          {
+            label: "说明已知事实，确认暂扣，并承诺下一次更新时间。",
+            feedback: "透明的时间线与明确责任让客户感到安心。",
+            trust: 20,
+          },
+          {
+            label: "调查完成前就承诺明天交货。",
+            feedback: "缺乏依据的承诺让恢复计划显得不可靠。",
+            trust: -20,
+          },
+          {
+            label: "将责任推给操作员和公用系统供应商。",
+            feedback: "推卸责任会降低客户对质量体系的信心。",
+            trust: -10,
+          },
+        ],
+      },
+      {
+        prompt: "你会提供什么恢复承诺？",
+        choices: [
+          {
+            label: "分阶段经 QA 批准重启，提供验证样品和更新后的交期。",
+            feedback: "设置关口的重启方案既保护质量，也恢复交付信心。",
+            trust: 20,
+          },
+          {
+            label: "立即全速重启，批次完成后再检验。",
+            feedback: "没有放行控制的速度会增加客户风险。",
+            trust: -20,
+          },
+          {
+            label: "等到答案完美再说，中间不提供更新。",
+            feedback: "即使调查谨慎，沉默仍会制造不确定性。",
+            trust: -5,
+          },
+        ],
+      },
+      {
+        prompt: "你将如何保障下一次合作？",
+        choices: [
+          {
+            label: "共同审核里程碑、公开 CAPA 证据，并提供备用产能。",
+            feedback: "共享证据能把事故转化为更强的运营合作关系。",
+            trust: 20,
+          },
+          {
+            label: "只提供折扣，不改变恢复控制措施。",
+            feedback: "商业补偿有帮助，但不能防止再次中断。",
+            trust: 0,
+          },
+          {
+            label: "下次生产只报告重大偏差。",
+            feedback: "选择性报告不符合可信赖的 GMP 合作关系。",
+            trust: -25,
+          },
+        ],
+      },
+    ],
+    successTitle: "客户信心已恢复",
+    successQuote: "你们清晰而严谨地处理了这次困难停线。我们愿意共同规划下一轮生产。",
+    successBody: "客户给出积极的恢复评价。新的合作已开启，运行条件也将更具挑战。",
+    nextCooperation: "开始下一次合作",
+    negotiationFailed: "客户需要更有力的方案",
+    negotiationFailedBody: "产线继续暂扣。重新制定承诺后，再次进行恢复沟通。",
+    retryNegotiation: "准备更好的方案",
+  },
   sim: {
     lineArmed: (title) => `产线就绪：${title}`,
     runStarted: "运行开始。监控工艺窗口。",
     outsideWindow: (label) => `${label} 偏离工艺窗口`,
     batchReleased: (oee) => `批次放行。OEE ${oee}%`,
     batchHeld: (oee) => `批次暂扣。OEE ${oee}% — 请回调工艺窗口。`,
+    humanError: (label) => `人为错误：${label} 输入不正确。产线停机核查。`,
+    humanErrorCleared: "人员核查完成。已批准产线重启。",
+    powerOutage: "突发停电：产线停止。正在核查备用公用系统。",
+    powerRestored: "供电恢复。安全联锁已复位，产线重新启动。",
+    autoAssistQueued: (label) => `自动助手发现 ${label} 漂移，正在准备校正。`,
+    parameterAutoRestored: (label) => `自动助手已将 ${label} 恢复到验证目标值。`,
+    manualCorrectionRequired: (label) => `产线已重启。请手动恢复 ${label}，避免废品增加。`,
   },
 };
 
