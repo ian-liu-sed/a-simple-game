@@ -7,6 +7,20 @@ globalThis.localStorage = {
   setItem: (key, value) => storage.set(key, String(value)),
   removeItem: (key) => storage.delete(key),
 };
+const cookies = new Map();
+globalThis.document = {};
+Object.defineProperty(globalThis.document, "cookie", {
+  configurable: true,
+  get: () =>
+    [...cookies.entries()]
+      .map(([key, value]) => `${key}=${value}`)
+      .join("; "),
+  set: (serialized) => {
+    const [pair] = String(serialized).split(";");
+    const separator = pair.indexOf("=");
+    cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
+  },
+});
 Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: { language: "en-US" },
@@ -22,21 +36,44 @@ try {
   const { LineSimulator } = await vite.ssrLoadModule("/src/game/simulator.ts");
   const { LEVELS } = await vite.ssrLoadModule("/src/game/levels.ts");
   const {
+    HOLD_DURATION_MS,
     completeClientRecovery,
     failureCount,
+    holdRemainingMs,
+    loadCampaign,
     recordOutcome,
     selectDifficulty,
   } =
     await vite.ssrLoadModule("/src/game/campaign.ts");
 
-  let campaign = { failures: {}, cooperations: 0, difficulty: 1 };
-  campaign = recordOutcome(campaign, LEVELS[0].id, false);
-  campaign = recordOutcome(campaign, LEVELS[0].id, false);
-  campaign = recordOutcome(campaign, LEVELS[0].id, false);
+  const holdStartedAt = 1_800_000_000_000;
+  let campaign = { failures: {}, holds: {}, cooperations: 0, difficulty: 1 };
+  campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
+  campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
+  campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
   assert.equal(failureCount(campaign, LEVELS[0].id), 3);
+  assert.equal(
+    holdRemainingMs(campaign, LEVELS[0].id, holdStartedAt),
+    HOLD_DURATION_MS,
+  );
+  assert.match(document.cookie, /sed_line_pilot_campaign_v2=/);
+  const reloadedCampaign = loadCampaign();
+  assert.equal(
+    holdRemainingMs(reloadedCampaign, LEVELS[0].id, holdStartedAt),
+    HOLD_DURATION_MS,
+  );
+  assert.equal(
+    holdRemainingMs(
+      reloadedCampaign,
+      LEVELS[0].id,
+      holdStartedAt + HOLD_DURATION_MS,
+    ),
+    0,
+  );
 
   campaign = completeClientRecovery(campaign, LEVELS[0].id);
   assert.equal(failureCount(campaign, LEVELS[0].id), 0);
+  assert.equal(holdRemainingMs(campaign, LEVELS[0].id, holdStartedAt), 0);
   assert.equal(campaign.cooperations, 1);
   assert.equal(campaign.difficulty, 2);
 
@@ -180,7 +217,7 @@ try {
   assert.equal(resilienceSnapshot.result.incidentsHandled, 6);
 
   console.log(
-    "Smoke tests passed: randomized incident counts/timing, multi-parameter errors, precision recovery, Auto Assist, and Legend outage.",
+    "Smoke tests passed: cookie-backed one-hour holds, randomized incidents, precision recovery, Auto Assist, and Legend outage.",
   );
 } finally {
   await vite.close();

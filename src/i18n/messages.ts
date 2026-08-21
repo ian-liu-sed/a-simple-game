@@ -84,6 +84,7 @@ export interface StoryMessages {
   difficultyDetail: Record<DifficultyTier, string>;
   chooseDifficulty: string;
   campaignStatus: string;
+  cookieNotice: string;
   cooperation: string;
   activeHold: string;
   failureReminder: string;
@@ -94,6 +95,9 @@ export interface StoryMessages {
   holdBody: string;
   holdReason: string;
   holdClock: string;
+  holdAccessHint: string;
+  holdWaiting: string;
+  holdReady: string;
   recoveryPlan: string;
   completed: string;
   callClient: string;
@@ -346,20 +350,25 @@ const en: Pack = {
     },
     chooseDifficulty: "Choose difficulty",
     campaignStatus: "Operations campaign",
+    cookieNotice: "Progress and one-hour mission holds are saved in a first-party cookie on this browser.",
     cooperation: "Client cooperations",
     activeHold: "LINE HOLD",
     failureReminder: "Production failure reminder",
     failureBody: (count, remaining) =>
       remaining > 0
         ? `${count}/3 failed batches on this line. ${remaining} more failure${remaining === 1 ? "" : "s"} will trigger a one-hour production hold.`
-        : `${count}/3 failed batches. This line is now on a one-hour production hold and the client must be contacted.`,
-    enterHold: "Start 60-minute recovery",
+        : `${count}/3 failed batches. This mission is locked on this browser for one real hour before the client recovery call.`,
+    enterHold: "View one-hour hold",
     incidentsHandled: "Incidents handled",
     holdTitle: "Production line on hold",
     holdBody:
-      "Three failed batches triggered a controlled one-hour stop. Contain the risk, establish the cause, and prepare an honest client update before production can resume.",
+      "Three failed batches triggered a real one-hour stop stored in this browser's campaign cookie. Complete the recovery work now; the client call unlocks when the timer expires.",
     holdReason: "3 consecutive failed batches",
-    holdClock: "Hold elapsed",
+    holdClock: "Hold remaining",
+    holdAccessHint:
+      "This mission cannot run on this browser during the hold. You can choose another mission, wait for the timer, or continue from another device/browser.",
+    holdWaiting: "Client recovery remains locked until the full one-hour timer reaches zero.",
+    holdReady: "The one-hour stop is complete. Finish the checklist to unlock the client call.",
     recoveryPlan: "Recovery checklist",
     completed: "Completed",
     callClient: "Call the client",
@@ -684,20 +693,25 @@ const zh: Pack = {
     },
     chooseDifficulty: "选择难度",
     campaignStatus: "运营战役",
+    cookieNotice: "游戏进度和一小时任务暂扣会保存在此浏览器的第一方 Cookie 中。",
     cooperation: "客户合作次数",
     activeHold: "产线暂扣",
     failureReminder: "生产失败提醒",
     failureBody: (count, remaining) =>
       remaining > 0
         ? `该产线已失败 ${count}/3 个批次。再失败 ${remaining} 次将触发一小时生产暂扣。`
-        : `该产线已失败 ${count}/3 个批次。现已进入一小时生产暂扣，必须联系客户。`,
-    enterHold: "开始 60 分钟恢复流程",
+        : `该产线已失败 ${count}/3 个批次。此浏览器中的该任务将真实锁定一小时，之后才能联系客户恢复。`,
+    enterHold: "查看一小时暂扣",
     incidentsHandled: "已处理事件",
     holdTitle: "生产线暂扣中",
     holdBody:
-      "连续三个批次失败触发受控停线一小时。恢复生产前，请控制风险、查明原因，并准备诚实的客户说明。",
+      "连续三个批次失败触发真实停线一小时，时间会保存在此浏览器的游戏 Cookie 中。现在可完成恢复工作，倒计时结束后才能联系客户。",
     holdReason: "连续 3 个批次失败",
-    holdClock: "暂扣已用时间",
+    holdClock: "暂扣剩余时间",
+    holdAccessHint:
+      "暂扣期间，此浏览器不能运行该任务。你可以选择其他任务、等待倒计时，或换用其他设备/浏览器继续。",
+    holdWaiting: "客户恢复流程仍被锁定，必须等待完整一小时倒计时结束。",
+    holdReady: "一小时停线已结束。完成检查清单即可联系客户。",
     recoveryPlan: "恢复检查清单",
     completed: "已完成",
     callClient: "致电客户",

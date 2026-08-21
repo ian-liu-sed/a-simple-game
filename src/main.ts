@@ -4,8 +4,11 @@ import { LineSimulator } from "./game/simulator";
 import { equipmentCardHtml, heroLineHtml } from "./game/art";
 import type { LevelDef, SimSnapshot } from "./game/types";
 import {
+  HOLD_DURATION_MS,
+  HOLD_THRESHOLD,
   completeClientRecovery,
   failureCount,
+  holdRemainingMs,
   loadCampaign,
   recordOutcome,
   selectDifficulty,
@@ -36,7 +39,6 @@ type Screen =
   | "negotiate"
   | "client";
 
-const HOLD_THRESHOLD = 3;
 const NEGOTIATION_PASS = 75;
 
 let screen: Screen = "home";
@@ -52,6 +54,7 @@ let negotiationStep = 0;
 let negotiationTrust = 45;
 let negotiationChoice: number | null = null;
 let clientRecoverySucceeded = false;
+let holdClockTimer = 0;
 
 applyDocumentLang();
 
@@ -126,6 +129,11 @@ function stopLoop(): void {
   raf = 0;
 }
 
+function stopHoldClock(): void {
+  if (holdClockTimer) window.clearInterval(holdClockTimer);
+  holdClockTimer = 0;
+}
+
 function loop(ts: number): void {
   if (!sim) return;
   let remainingDt = Math.max(0, (ts - lastTs) / 1000);
@@ -153,6 +161,7 @@ function loop(ts: number): void {
 }
 
 function render(): void {
+  stopHoldClock();
   document.title =
     getLang() === "zh"
       ? "SED 产线飞行员 | SED Machines"
@@ -293,6 +302,7 @@ function renderHome(): string {
         <span class="eyebrow">${story.campaignStatus}</span>
         <strong>${story.difficulty[campaign.difficulty]}</strong>
         <small>${story.difficultyDetail[campaign.difficulty]}</small>
+        <small class="cookie-note">${story.cookieNotice}</small>
       </div>
       ${difficultySelectorHtml()}
       <div class="campaign-count">
@@ -620,10 +630,47 @@ function bindResult(): void {
   });
 }
 
+function formatHoldTime(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds]
+    .map((value) => String(value).padStart(2, "0"))
+    .join(":");
+}
+
+function updateHoldClock(): void {
+  const story = storyT();
+  const remainingMs = holdRemainingMs(campaign, LEVELS[levelIndex].id);
+  const elapsedPct = Math.min(
+    100,
+    Math.max(0, ((HOLD_DURATION_MS - remainingMs) / HOLD_DURATION_MS) * 100),
+  );
+  const countdown = document.getElementById("hold-countdown");
+  if (countdown) countdown.textContent = formatHoldTime(remainingMs);
+  const progress = document.getElementById("hold-progress-bar");
+  if (progress) progress.style.width = `${elapsedPct}%`;
+  const waiting = document.getElementById("hold-waiting");
+  if (waiting) {
+    waiting.textContent = remainingMs > 0 ? story.holdWaiting : story.holdReady;
+  }
+  const callButton = document.querySelector<HTMLButtonElement>("#btn-call-client");
+  if (callButton) {
+    callButton.disabled =
+      remainingMs > 0 || holdActions.size !== story.holdActions.length;
+  }
+  if (remainingMs === 0) stopHoldClock();
+}
+
 function renderHold(level: LevelDef): string {
   const ui = t();
   const story = storyT();
-  const elapsedMinutes = holdActions.size * 20;
+  const remainingMs = holdRemainingMs(campaign, LEVELS[levelIndex].id);
+  const elapsedPct = Math.min(
+    100,
+    Math.max(0, ((HOLD_DURATION_MS - remainingMs) / HOLD_DURATION_MS) * 100),
+  );
   const complete = holdActions.size === story.holdActions.length;
   const actions = story.holdActions
     .map((action, index) => {
@@ -661,17 +708,19 @@ function renderHold(level: LevelDef): string {
       </div>
       <div class="hold-clock" aria-live="polite">
         <span>${story.holdClock}</span>
-        <strong>${elapsedMinutes}:00 / 60:00</strong>
-        <div class="hold-progress"><span style="width:${(elapsedMinutes / 60) * 100}%"></span></div>
+        <strong id="hold-countdown">${formatHoldTime(remainingMs)}</strong>
+        <div class="hold-progress"><span id="hold-progress-bar" style="width:${elapsedPct}%"></span></div>
       </div>
     </section>
 
     <section class="panel recovery-panel">
       <h3>${story.recoveryPlan}</h3>
+      <p class="hold-access-hint">${story.holdAccessHint}</p>
       <div class="recovery-list">${actions}</div>
       <div class="actions">
-        <button class="btn-primary" id="btn-call-client" ${complete ? "" : "disabled"}>${story.callClient}</button>
+        <button class="btn-primary" id="btn-call-client" ${complete && remainingMs === 0 ? "" : "disabled"}>${story.callClient}</button>
       </div>
+      <p class="hold-waiting" id="hold-waiting">${remainingMs > 0 ? story.holdWaiting : story.holdReady}</p>
     </section>
   </div>`;
 }
@@ -688,12 +737,22 @@ function bindHold(): void {
       });
     });
   document.getElementById("btn-call-client")?.addEventListener("click", () => {
+    if (
+      holdRemainingMs(campaign, LEVELS[levelIndex].id) > 0 ||
+      holdActions.size !== storyT().holdActions.length
+    ) {
+      return;
+    }
     negotiationStep = 0;
     negotiationTrust = 45;
     negotiationChoice = null;
     screen = "negotiate";
     render();
   });
+  updateHoldClock();
+  if (holdRemainingMs(campaign, LEVELS[levelIndex].id) > 0) {
+    holdClockTimer = window.setInterval(updateHoldClock, 1000);
+  }
 }
 
 function renderNegotiation(level: LevelDef): string {

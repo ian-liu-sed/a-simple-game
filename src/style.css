@@ -1070,6 +1070,13 @@ button:disabled {
   color: var(--accent-2);
 }
 
+.cookie-note {
+  margin-top: 5px;
+  color: #8fa6bf;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
 .failure-reminder {
   display: flex;
   gap: 12px;
@@ -1199,6 +1206,23 @@ button:disabled {
 
 .recovery-panel h3 {
   margin-top: 0;
+}
+
+.hold-access-hint,
+.hold-waiting {
+  margin: -2px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(217, 119, 6, 0.42);
+  border-radius: 10px;
+  background: rgba(217, 119, 6, 0.08);
+  color: #d8e1ec;
+  line-height: 1.45;
+}
+
+.hold-waiting {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .recovery-list {
