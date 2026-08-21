@@ -554,8 +554,19 @@ function renderResult(level: LevelDef, s: SimSnapshot): string {
     </div>
     <div class="panel">
       <div class="result-banner ${r.passed ? "pass" : "fail"}">
-        <h2 style="margin:0 0 6px">${r.passed ? ui.released : ui.held}</h2>
-        <p style="margin:0; color:var(--muted)">${ui.score} ${r.score} · ${ui.best} ${bestScores[LEVELS[levelIndex].id] ?? r.score}</p>
+        <div class="result-heading">
+          <div>
+            <h2>${r.passed ? ui.released : ui.held}</h2>
+            <p>${ui.score} ${r.score} · ${ui.best} ${bestScores[LEVELS[levelIndex].id] ?? r.score}</p>
+          </div>
+          <div class="client-reaction ${r.passed ? "satisfied" : "disappointed"}" role="status">
+            <span class="client-face" role="img" aria-label="${r.passed ? ui.clientSatisfied : ui.clientDisappointed}">${r.passed ? "😊" : "😞"}</span>
+            <div>
+              <strong>${r.passed ? ui.clientSatisfied : ui.clientDisappointed}</strong>
+              <small>${r.passed ? ui.clientSatisfiedBody : ui.clientDisappointedBody}</small>
+            </div>
+          </div>
+        </div>
         <div class="result-grid">
           <div class="metric"><div class="label">${ui.produced}</div><div class="value">${r.produced}</div></div>
           <div class="metric"><div class="label">${ui.rejects}</div><div class="value">${r.rejected}</div></div>

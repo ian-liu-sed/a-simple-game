@@ -38,6 +38,10 @@ export interface UiMessages {
   batchReport: string;
   released: string;
   held: string;
+  clientSatisfied: string;
+  clientSatisfiedBody: string;
+  clientDisappointed: string;
+  clientDisappointedBody: string;
   score: string;
   produced: string;
   quality: string;
@@ -169,6 +173,10 @@ const en: Pack = {
     batchReport: "Batch report",
     released: "RELEASED — process capable",
     held: "HELD — out of window",
+    clientSatisfied: "Client satisfied",
+    clientSatisfiedBody: "The batch met expectations. The client is ready for the next mission.",
+    clientDisappointed: "Client disappointed",
+    clientDisappointedBody: "The batch missed expectations. Recover the process and rebuild confidence.",
     score: "Score",
     produced: "Produced",
     quality: "Quality",
@@ -328,9 +336,9 @@ const en: Pack = {
       3: "Legend",
     },
     difficultyDetail: {
-      1: "1–2 random human errors; Auto Assist restores the affected parameter",
-      2: "2–4 random incidents; precisely restore one or two affected parameters",
-      3: "4–6 random incidents, multi-parameter drift, precision recovery, and a power outage",
+      1: "Auto Assist restores affected parameters after unexpected human errors",
+      2: "Random incidents affect one or two parameters; precise manual recovery required",
+      3: "Frequent random incidents cause multi-parameter drift, precision recovery, and a power outage",
     },
     chooseDifficulty: "Choose difficulty",
     campaignStatus: "Operations campaign",
@@ -502,6 +510,10 @@ const zh: Pack = {
     batchReport: "批次报告",
     released: "放行 — 工艺能力达标",
     held: "暂扣 — 偏离工艺窗口",
+    clientSatisfied: "客户满意",
+    clientSatisfiedBody: "本批次达到预期，客户愿意继续推进下一项任务。",
+    clientDisappointed: "客户失望",
+    clientDisappointedBody: "本批次未达到预期，请恢复工艺并重新建立客户信心。",
     score: "得分",
     produced: "产量",
     quality: "质量",
@@ -660,9 +672,9 @@ const zh: Pack = {
       3: "传奇",
     },
     difficultyDetail: {
-      1: "随机 1–2 次人为错误，自动助手会恢复受影响参数",
-      2: "随机 2–4 次事件，需精准恢复一至两个受影响参数",
-      3: "随机 4–6 次事件、多参数同时漂移、精准恢复并应对突发停电",
+      1: "突发人为错误后，自动助手会恢复受影响参数",
+      2: "随机事件影响一至两个参数，需精准手动恢复",
+      3: "频繁随机事件导致多参数同时漂移，需精准恢复并应对突发停电",
     },
     chooseDifficulty: "选择难度",
     campaignStatus: "运营战役",
