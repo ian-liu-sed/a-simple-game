@@ -68,15 +68,23 @@ export class LineSimulator {
     until: number;
     message: string;
     cleared: string;
-    controlKey?: string;
+    controlKeys?: string[];
   } | null = null;
   private autoCorrections: Array<{ at: number; controlKey: string }> = [];
   private attentionControls = new Set<string>();
   private incidentsHandled = 0;
+  private random: () => number;
+  private humanErrorSchedule: number[];
 
-  constructor(level: LevelDef, difficulty: DifficultyTier = 1) {
+  constructor(
+    level: LevelDef,
+    difficulty: DifficultyTier = 1,
+    random: () => number = Math.random,
+  ) {
     this.level = level;
     this.difficulty = difficulty;
+    this.random = random;
+    this.humanErrorSchedule = this.createHumanErrorSchedule();
     this.controls = Object.fromEntries(
       level.controls.map((c) => [c.key, c.ideal]),
     );
@@ -101,7 +109,7 @@ export class LineSimulator {
     const def = this.level.controls.find((c) => c.key === key);
     if (!def) return;
     this.controls[key] = clamp(value, def.min, def.max);
-    if (deviation(this.controls[key], def) <= 1) {
+    if (deviation(this.controls[key], def) <= this.recoveryPrecision()) {
       this.attentionControls.delete(key);
     } else {
       this.attentionControls.add(key);
@@ -211,22 +219,15 @@ export class LineSimulator {
   }
 
   private handleDifficultyEvents(): void {
-    const humanErrorSchedule =
-      this.difficulty === 1
-        ? [0.24, 0.66]
-        : this.difficulty === 2
-          ? [0.18, 0.48, 0.78]
-          : [0.18, 0.42, 0.82];
-
-    for (let index = 0; index < humanErrorSchedule.length; index += 1) {
+    for (let index = 0; index < this.humanErrorSchedule.length; index += 1) {
       const key = `human-error-${index}`;
       if (this.firedDifficultyEvents.has(key)) continue;
-      if (this.elapsed < this.level.durationSec * humanErrorSchedule[index]) {
+      if (this.elapsed < this.level.durationSec * this.humanErrorSchedule[index]) {
         continue;
       }
       if (this.activeStop) break;
       this.firedDifficultyEvents.add(key);
-      this.triggerHumanError(index);
+      this.triggerHumanError();
       break;
     }
 
@@ -241,24 +242,46 @@ export class LineSimulator {
     }
   }
 
-  private triggerHumanError(index: number): void {
-    const control = this.level.controls[index % this.level.controls.length];
-    if (!control) return;
-    const direction = this.controls[control.key] <= control.ideal ? 1 : -1;
-    this.controls[control.key] = clamp(
-      alignToStep(
-        control.ideal + direction * control.tolerance * 2.1,
-        control,
-      ),
-      control.min,
-      control.max,
+  private triggerHumanError(): void {
+    const controls = [...this.level.controls];
+    if (controls.length === 0) return;
+    const [minimumAffected, maximumAffected] =
+      this.difficulty === 1 ? [1, 1] : this.difficulty === 2 ? [1, 2] : [2, 3];
+    const affectedCount = Math.min(
+      controls.length,
+      minimumAffected +
+        Math.floor(this.nextRandom() * (maximumAffected - minimumAffected + 1)),
     );
-    this.attentionControls.add(control.key);
+    const affected: ControlDef[] = [];
+
+    while (affected.length < affectedCount && controls.length > 0) {
+      const choice = Math.floor(this.nextRandom() * controls.length);
+      const [control] = controls.splice(choice, 1);
+      affected.push(control);
+      const direction = this.nextRandom() < 0.5 ? -1 : 1;
+      const magnitude =
+        this.difficulty === 1
+          ? 1.6 + this.nextRandom() * 0.6
+          : this.difficulty === 2
+            ? 2 + this.nextRandom()
+            : 2.5 + this.nextRandom() * 1.2;
+      this.controls[control.key] = clamp(
+        alignToStep(
+          control.ideal + direction * control.tolerance * magnitude,
+          control,
+        ),
+        control.min,
+        control.max,
+      );
+      this.attentionControls.add(control.key);
+    }
+
+    const labels = affected.map((control) => control.label).join(" / ");
     this.startStop(
-      simT().humanError(control.label),
+      simT().humanError(labels),
       simT().humanErrorCleared,
       3.5,
-      control.key,
+      affected.map((control) => control.key),
     );
   }
 
@@ -266,33 +289,73 @@ export class LineSimulator {
     message: string,
     cleared: string,
     duration: number,
-    controlKey?: string,
+    controlKeys?: string[],
   ): void {
     this.activeStop = {
       until: this.elapsed + duration,
       message,
       cleared,
-      controlKey,
+      controlKeys,
     };
     this.pushLog(message);
   }
 
   private resolveActiveStop(): void {
     if (!this.activeStop || this.elapsed < this.activeStop.until) return;
-    const { cleared, controlKey } = this.activeStop;
+    const { cleared, controlKeys = [] } = this.activeStop;
     this.pushLog(cleared);
     this.activeStop = null;
     this.incidentsHandled += 1;
-    if (!controlKey) return;
-    const control = this.level.controls.find((def) => def.key === controlKey);
-    if (!control) return;
+    if (controlKeys.length === 0) return;
+    const controls = controlKeys
+      .map((key) => this.level.controls.find((def) => def.key === key))
+      .filter((control): control is ControlDef => Boolean(control));
+    if (controls.length === 0) return;
     if (this.difficulty === 1) {
-      this.controls[control.key] = control.ideal;
-      this.attentionControls.delete(control.key);
-      this.pushLog(simT().parameterAutoRestored(control.label));
+      for (const control of controls) {
+        this.controls[control.key] = control.ideal;
+        this.attentionControls.delete(control.key);
+      }
+      this.pushLog(
+        simT().parameterAutoRestored(
+          controls.map((control) => control.label).join(" / "),
+        ),
+      );
     } else {
-      this.pushLog(simT().manualCorrectionRequired(control.label));
+      this.pushLog(
+        simT().manualCorrectionRequired(
+          controls.map((control) => control.label).join(" / "),
+        ),
+      );
     }
+  }
+
+  private createHumanErrorSchedule(): number[] {
+    const [minimum, maximum] =
+      this.difficulty === 1 ? [1, 2] : this.difficulty === 2 ? [2, 4] : [4, 6];
+    const count =
+      minimum + Math.floor(this.nextRandom() * (maximum - minimum + 1));
+    const start = 0.12;
+    const end = 0.9;
+    const segment = (end - start) / count;
+
+    return Array.from({ length: count }, (_, index) =>
+      Number(
+        (
+          start +
+          segment * index +
+          segment * (0.25 + this.nextRandom() * 0.5)
+        ).toFixed(4),
+      ),
+    );
+  }
+
+  private nextRandom(): number {
+    return clamp(this.random(), 0, 0.999999);
+  }
+
+  private recoveryPrecision(): number {
+    return this.difficulty === 1 ? 1 : this.difficulty === 2 ? 0.5 : 0.25;
   }
 
   private resolveAutoCorrections(): void {

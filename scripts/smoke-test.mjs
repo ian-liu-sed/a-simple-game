@@ -46,25 +46,29 @@ try {
   campaign = selectDifficulty(campaign, 1);
   assert.equal(campaign.difficulty, 1);
 
-  const lowRun = new LineSimulator(LEVELS[0], 1);
+  const midpointRandom = () => 0.5;
+
+  const lowRun = new LineSimulator(LEVELS[0], 1, midpointRandom);
   lowRun.start();
-  let lowSnapshot;
-  for (let elapsed = 0; elapsed < 13.4; elapsed += 0.1) {
+  let lowSnapshot = lowRun.tick(0);
+  while (lowSnapshot.elapsed < 20 && lowSnapshot.attentionControls.length === 0) {
     lowSnapshot = lowRun.tick(0.1);
   }
   assert.match(lowSnapshot.alarm, /Human error/);
-  const force = LEVELS[0].controls.find((control) => control.key === "force");
-  assert.ok(force);
-  assert.notEqual(lowSnapshot.controls.force, force.ideal);
-  assert.ok(lowSnapshot.attentionControls.includes("force"));
+  const assistedKey = lowSnapshot.attentionControls[0];
+  const assistedControl = LEVELS[0].controls.find(
+    (control) => control.key === assistedKey,
+  );
+  assert.ok(assistedControl);
+  assert.notEqual(lowSnapshot.controls[assistedKey], assistedControl.ideal);
   for (let elapsed = 0; elapsed < 3.6; elapsed += 0.1) {
     lowSnapshot = lowRun.tick(0.1);
   }
-  assert.equal(lowSnapshot.controls.force, force.ideal);
-  assert.ok(!lowSnapshot.attentionControls.includes("force"));
+  assert.equal(lowSnapshot.controls[assistedKey], assistedControl.ideal);
+  assert.ok(!lowSnapshot.attentionControls.includes(assistedKey));
   assert.ok(lowSnapshot.log.some((message) => message.includes("Auto Assist restored")));
 
-  const lowDisturbanceRun = new LineSimulator(LEVELS[1], 1);
+  const lowDisturbanceRun = new LineSimulator(LEVELS[1], 1, () => 0.999);
   lowDisturbanceRun.start();
   let lowDisturbanceSnapshot;
   for (let elapsed = 0; elapsed < 24.2; elapsed += 0.1) {
@@ -75,42 +79,92 @@ try {
   assert.equal(lowDisturbanceSnapshot.controls.tamp, tamp.ideal);
   assert.ok(!lowDisturbanceSnapshot.attentionControls.includes("tamp"));
 
-  const humanRun = new LineSimulator(LEVELS[0], 2);
+  const humanRun = new LineSimulator(LEVELS[0], 2, midpointRandom);
   humanRun.start();
-  let humanSnapshot;
-  for (let elapsed = 0; elapsed < 21.4; elapsed += 0.1) {
+  let humanSnapshot = humanRun.tick(0);
+  while (humanSnapshot.elapsed < 20 && humanSnapshot.attentionControls.length === 0) {
     humanSnapshot = humanRun.tick(0.1);
   }
-  assert.notEqual(humanSnapshot.controls.force, force.ideal);
-  assert.equal(
-    Math.round((humanSnapshot.controls.force - force.min) / force.step),
-    (humanSnapshot.controls.force - force.min) / force.step,
+  const firstExpertKeys = [...humanSnapshot.attentionControls];
+  assert.equal(firstExpertKeys.length, 2);
+  const firstExpertControl = LEVELS[0].controls.find(
+    (control) => control.key === firstExpertKeys[0],
+  );
+  assert.ok(firstExpertControl);
+  assert.notEqual(
+    humanSnapshot.controls[firstExpertControl.key],
+    firstExpertControl.ideal,
   );
   assert.ok(
     humanSnapshot.log.some((message) =>
-      message.includes("Manually restore Main compression"),
+      message.includes("Human error"),
     ),
   );
-  assert.ok(humanSnapshot.attentionControls.includes("force"));
-  humanRun.setControl("force", force.ideal);
-  humanSnapshot = humanRun.tick(0.1);
-  assert.ok(!humanSnapshot.attentionControls.includes("force"));
-  while (humanSnapshot.elapsed < LEVELS[0].durationSec * 0.49) {
+  for (let elapsed = 0; elapsed < 3.6; elapsed += 0.1) {
     humanSnapshot = humanRun.tick(0.1);
   }
-  assert.ok(humanSnapshot.attentionControls.includes("rpm"));
-  const rpm = LEVELS[0].controls.find((control) => control.key === "rpm");
-  assert.ok(rpm);
-  humanRun.setControl("rpm", rpm.ideal);
+  humanRun.setControl(
+    firstExpertControl.key,
+    firstExpertControl.ideal + firstExpertControl.tolerance * 0.75,
+  );
+  humanSnapshot = humanRun.tick(0.1);
+  assert.ok(humanSnapshot.attentionControls.includes(firstExpertControl.key));
+  for (const key of firstExpertKeys) {
+    const control = LEVELS[0].controls.find((item) => item.key === key);
+    assert.ok(control);
+    humanRun.setControl(key, control.ideal);
+  }
+  humanSnapshot = humanRun.tick(0.1);
+  assert.equal(humanSnapshot.attentionControls.length, 0);
+  while (humanSnapshot.elapsed < LEVELS[0].durationSec * 0.55) {
+    humanSnapshot = humanRun.tick(0.1);
+  }
+  assert.ok(humanSnapshot.attentionControls.length > 0);
   while (!humanSnapshot.finished) {
     humanSnapshot = humanRun.tick(0.1);
   }
   assert.equal(humanSnapshot.result.incidentsHandled, 3);
 
-  const resilienceRun = new LineSimulator(LEVELS[0], 3);
+  const minimumExpertRun = new LineSimulator(LEVELS[0], 2, () => 0);
+  minimumExpertRun.start();
+  let minimumExpertSnapshot = minimumExpertRun.tick(0);
+  while (!minimumExpertSnapshot.finished) {
+    minimumExpertSnapshot = minimumExpertRun.tick(0.1);
+  }
+  assert.equal(minimumExpertSnapshot.result.incidentsHandled, 2);
+
+  const maximumExpertRun = new LineSimulator(LEVELS[0], 2, () => 0.999);
+  maximumExpertRun.start();
+  let maximumExpertSnapshot = maximumExpertRun.tick(0);
+  while (!maximumExpertSnapshot.finished) {
+    maximumExpertSnapshot = maximumExpertRun.tick(0.1);
+  }
+  assert.equal(maximumExpertSnapshot.result.incidentsHandled, 4);
+
+  const resilienceRun = new LineSimulator(LEVELS[0], 3, midpointRandom);
   resilienceRun.start();
-  let resilienceSnapshot;
-  for (let elapsed = 0; elapsed < 34.2; elapsed += 0.1) {
+  let resilienceSnapshot = resilienceRun.tick(0);
+  while (
+    resilienceSnapshot.elapsed < 15 &&
+    resilienceSnapshot.attentionControls.length === 0
+  ) {
+    resilienceSnapshot = resilienceRun.tick(0.1);
+  }
+  assert.equal(resilienceSnapshot.attentionControls.length, 3);
+  const legendControl = LEVELS[0].controls.find(
+    (control) => control.key === resilienceSnapshot.attentionControls[0],
+  );
+  assert.ok(legendControl);
+  resilienceRun.setControl(
+    legendControl.key,
+    legendControl.ideal + legendControl.tolerance * 0.4,
+  );
+  resilienceSnapshot = resilienceRun.tick(0.1);
+  assert.ok(resilienceSnapshot.attentionControls.includes(legendControl.key));
+  resilienceRun.setControl(legendControl.key, legendControl.ideal);
+  resilienceSnapshot = resilienceRun.tick(0.1);
+  assert.ok(!resilienceSnapshot.attentionControls.includes(legendControl.key));
+  while (resilienceSnapshot.elapsed < 34.2) {
     resilienceSnapshot = resilienceRun.tick(0.1);
   }
   assert.match(resilienceSnapshot.alarm, /Power outage/);
@@ -123,10 +177,10 @@ try {
   while (!resilienceSnapshot.finished) {
     resilienceSnapshot = resilienceRun.tick(0.1);
   }
-  assert.equal(resilienceSnapshot.result.incidentsHandled, 4);
+  assert.equal(resilienceSnapshot.result.incidentsHandled, 6);
 
   console.log(
-    "Smoke tests passed: Assistant auto-recovery, Expert warnings and manual recovery, Legend power outage and frequent errors.",
+    "Smoke tests passed: randomized incident counts/timing, multi-parameter errors, precision recovery, Auto Assist, and Legend outage.",
   );
 } finally {
   await vite.close();

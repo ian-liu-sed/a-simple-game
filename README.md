@@ -9,7 +9,7 @@ Play as a line operator / plant engineer. Tune process parameters on tablet pres
 - Production failures are tracked per line with an immediate batch reminder.
 - Three consecutive failed batches trigger a simulated 60-minute production hold and CAPA recovery checklist.
 - A three-round client call scores transparency, recovery commitments, and trust. Successful recovery earns the client's compliment and unlocks the next cooperation.
-- Players can choose Assistant, Expert, or Legend difficulty. Assistant auto-recovers from two human errors; Expert introduces three errors with manual parameter recovery; Legend combines three errors with an unplanned power outage.
+- Players can choose Assistant, Expert, or Legend difficulty. Assistant auto-recovers from 1–2 random human errors; Expert introduces 2–4 random incidents with one or two affected parameters and precise manual recovery; Legend combines 4–6 random multi-parameter incidents, tighter recovery precision, and an unplanned power outage.
 - Incident-shifted controls pulse red with an **ADJUST NOW** badge until the parameter returns to its validated window.
 - Successful client recovery recommends the next difficulty while keeping all three modes selectable.
 - Campaign progress, line holds, cooperation count, difficulty, language, and best scores persist locally.
