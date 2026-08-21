@@ -64,8 +64,13 @@ export class LineSimulator {
   private carry = 0;
   private difficulty: DifficultyTier;
   private firedDifficultyEvents = new Set<string>();
-  private activeStop: { until: number; message: string; cleared: string } | null =
-    null;
+  private activeStop: {
+    until: number;
+    message: string;
+    cleared: string;
+    controlKey?: string;
+  } | null = null;
+  private autoCorrections: Array<{ at: number; controlKey: string }> = [];
   private incidentsHandled = 0;
 
   constructor(level: LevelDef, difficulty: DifficultyTier = 1) {
@@ -106,6 +111,7 @@ export class LineSimulator {
 
     this.elapsed += dt;
     this.resolveActiveStop();
+    this.resolveAutoCorrections();
     this.handleEvents();
     this.handleDifficultyEvents();
 
@@ -185,6 +191,13 @@ export class LineSimulator {
             def.min,
             def.max,
           );
+          if (this.difficulty === 1) {
+            this.autoCorrections.push({
+              at: this.elapsed + 2,
+              controlKey: def.key,
+            });
+            this.pushLog(simT().autoAssistQueued(def.label));
+          }
         }
       }
     });
@@ -192,14 +205,11 @@ export class LineSimulator {
 
   private handleDifficultyEvents(): void {
     if (
-      this.difficulty >= 2 &&
       !this.firedDifficultyEvents.has("human-error") &&
       this.elapsed >= this.level.durationSec * 0.32
     ) {
       this.firedDifficultyEvents.add("human-error");
-      const control = this.level.controls[
-        Math.min(1, this.level.controls.length - 1)
-      ];
+      const control = this.level.controls[0];
       if (control) {
         const direction = this.controls[control.key] <= control.ideal ? 1 : -1;
         this.controls[control.key] = clamp(
@@ -214,6 +224,7 @@ export class LineSimulator {
           simT().humanError(control.label),
           simT().humanErrorCleared,
           3.5,
+          control.key,
         );
       }
     }
@@ -228,20 +239,52 @@ export class LineSimulator {
     }
   }
 
-  private startStop(message: string, cleared: string, duration: number): void {
+  private startStop(
+    message: string,
+    cleared: string,
+    duration: number,
+    controlKey?: string,
+  ): void {
     this.activeStop = {
       until: this.elapsed + duration,
       message,
       cleared,
+      controlKey,
     };
     this.pushLog(message);
   }
 
   private resolveActiveStop(): void {
     if (!this.activeStop || this.elapsed < this.activeStop.until) return;
-    this.pushLog(this.activeStop.cleared);
+    const { cleared, controlKey } = this.activeStop;
+    this.pushLog(cleared);
     this.activeStop = null;
     this.incidentsHandled += 1;
+    if (!controlKey) return;
+    const control = this.level.controls.find((def) => def.key === controlKey);
+    if (!control) return;
+    if (this.difficulty === 1) {
+      this.controls[control.key] = control.ideal;
+      this.pushLog(simT().parameterAutoRestored(control.label));
+    } else {
+      this.pushLog(simT().manualCorrectionRequired(control.label));
+    }
+  }
+
+  private resolveAutoCorrections(): void {
+    const ready = this.autoCorrections.filter((item) => item.at <= this.elapsed);
+    this.autoCorrections = this.autoCorrections.filter(
+      (item) => item.at > this.elapsed,
+    );
+    for (const item of ready) {
+      const control = this.level.controls.find(
+        (def) => def.key === item.controlKey,
+      );
+      if (!control) continue;
+      this.controls[control.key] = control.ideal;
+      this.incidentsHandled += 1;
+      this.pushLog(simT().parameterAutoRestored(control.label));
+    }
   }
 
   private finish(): void {

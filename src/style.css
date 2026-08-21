@@ -774,8 +774,8 @@ button:disabled {
 }
 
 .campaign-strip {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(160px, 0.65fr) minmax(0, 2fr) auto;
   align-items: center;
   gap: 18px;
   margin: 14px 0;
@@ -829,6 +829,68 @@ button:disabled {
   border: 1px solid rgba(31, 184, 136, 0.35);
   border-radius: 10px;
   background: rgba(20, 147, 111, 0.08);
+}
+
+.difficulty-select {
+  display: grid;
+  gap: 7px;
+}
+
+.difficulty-select.compact {
+  margin: 14px 0 18px;
+  padding: 12px;
+  border: 1px solid rgba(31, 184, 136, 0.35);
+  border-radius: 10px;
+  background: rgba(20, 147, 111, 0.06);
+}
+
+.difficulty-select-label {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.difficulty-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.difficulty-option {
+  min-height: 82px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 10px;
+  color: var(--text);
+  text-align: left;
+  border: 1px solid var(--line);
+  background: rgba(11, 18, 32, 0.45);
+}
+
+.difficulty-option:hover {
+  border-color: var(--accent-2);
+  background: rgba(20, 147, 111, 0.1);
+}
+
+.difficulty-option.active {
+  border-color: var(--accent-2);
+  background: linear-gradient(145deg, rgba(20, 147, 111, 0.22), rgba(31, 184, 136, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(31, 184, 136, 0.2);
+}
+
+.difficulty-option strong {
+  color: var(--accent-2);
+  font-size: 0.9rem;
+}
+
+.difficulty-option small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .hud.hud-five {
@@ -1229,7 +1291,20 @@ button:disabled {
   }
 
   .campaign-strip {
-    align-items: flex-start;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .campaign-count {
+    justify-items: start;
+  }
+
+  .difficulty-options {
+    grid-template-columns: 1fr;
+  }
+
+  .difficulty-option {
+    min-height: auto;
   }
 
   .recovery-action {

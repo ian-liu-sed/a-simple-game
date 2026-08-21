@@ -76,6 +76,7 @@ export interface LevelMessages {
 export interface StoryMessages {
   difficulty: Record<DifficultyTier, string>;
   difficultyDetail: Record<DifficultyTier, string>;
+  chooseDifficulty: string;
   campaignStatus: string;
   cooperation: string;
   activeHold: string;
@@ -123,6 +124,9 @@ export interface Pack {
     humanErrorCleared: string;
     powerOutage: string;
     powerRestored: string;
+    autoAssistQueued: (label: string) => string;
+    parameterAutoRestored: (label: string) => string;
+    manualCorrectionRequired: (label: string) => string;
   };
 }
 
@@ -319,15 +323,16 @@ const en: Pack = {
   },
   story: {
     difficulty: {
-      1: "Standard",
-      2: "Human factor",
-      3: "Resilience drill",
+      1: "Low",
+      2: "Medium",
+      3: "High",
     },
     difficultyDetail: {
-      1: "Process disturbances only",
-      2: "Human errors stop the line and shift a parameter",
-      3: "Human errors plus an unplanned power outage",
+      1: "Auto Assist restores parameters after human errors and disturbances",
+      2: "Human errors stop the line; you must restore changed parameters",
+      3: "Manual parameter recovery plus an unplanned power outage",
     },
+    chooseDifficulty: "Choose difficulty",
     campaignStatus: "Operations campaign",
     cooperation: "Client cooperations",
     activeHold: "LINE HOLD",
@@ -449,6 +454,12 @@ const en: Pack = {
     humanErrorCleared: "Operator check complete. Line restart authorized.",
     powerOutage: "Power outage: line stopped. Backup utilities are being verified.",
     powerRestored: "Power restored. Safety interlocks reset and line restarted.",
+    autoAssistQueued: (label) =>
+      `Auto Assist detected ${label} drift and is preparing a correction.`,
+    parameterAutoRestored: (label) =>
+      `Auto Assist restored ${label} to its validated target.`,
+    manualCorrectionRequired: (label) =>
+      `Line restarted. Manually restore ${label} before rejects rise.`,
   },
 };
 
@@ -644,15 +655,16 @@ const zh: Pack = {
   },
   story: {
     difficulty: {
-      1: "标准",
-      2: "人为因素",
-      3: "韧性演练",
+      1: "低",
+      2: "中",
+      3: "高",
     },
     difficultyDetail: {
-      1: "仅有工艺扰动",
-      2: "人为错误会停线并改变参数",
-      3: "人为错误加突发停电",
+      1: "人为错误或扰动后，自动助手会恢复参数",
+      2: "人为错误会停线，参数需要你手动恢复",
+      3: "手动恢复参数，并应对突发停电",
     },
+    chooseDifficulty: "选择难度",
     campaignStatus: "运营战役",
     cooperation: "客户合作次数",
     activeHold: "产线暂扣",
@@ -770,6 +782,9 @@ const zh: Pack = {
     humanErrorCleared: "人员核查完成。已批准产线重启。",
     powerOutage: "突发停电：产线停止。正在核查备用公用系统。",
     powerRestored: "供电恢复。安全联锁已复位，产线重新启动。",
+    autoAssistQueued: (label) => `自动助手发现 ${label} 漂移，正在准备校正。`,
+    parameterAutoRestored: (label) => `自动助手已将 ${label} 恢复到验证目标值。`,
+    manualCorrectionRequired: (label) => `产线已重启。请手动恢复 ${label}，避免废品增加。`,
   },
 };
 

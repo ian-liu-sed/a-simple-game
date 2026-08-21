@@ -61,6 +61,15 @@ export function recordOutcome(
   return next;
 }
 
+export function selectDifficulty(
+  state: CampaignState,
+  difficulty: DifficultyTier,
+): CampaignState {
+  const next = normalize({ ...state, difficulty });
+  saveCampaign(next);
+  return next;
+}
+
 export function completeClientRecovery(
   state: CampaignState,
   levelId: string,

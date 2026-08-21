@@ -9,7 +9,8 @@ Play as a line operator / plant engineer. Tune process parameters on tablet pres
 - Production failures are tracked per line with an immediate batch reminder.
 - Three consecutive failed batches trigger a simulated 60-minute production hold and CAPA recovery checklist.
 - A three-round client call scores transparency, recovery commitments, and trust. Successful recovery earns the client's compliment and unlocks the next cooperation.
-- Difficulty escalates from process disturbances to human-error stops and parameter changes, then to a resilience drill with an unplanned power outage.
+- Players can choose Low, Medium, or High difficulty. Low uses Auto Assist to restore parameters changed by human errors or process disturbances; Medium requires manual parameter recovery; High adds an unplanned power outage.
+- Successful client recovery recommends the next difficulty while keeping all three modes selectable.
 - Campaign progress, line holds, cooperation count, difficulty, language, and best scores persist locally.
 
 ## Stack

@@ -21,7 +21,12 @@ const vite = await createServer({
 try {
   const { LineSimulator } = await vite.ssrLoadModule("/src/game/simulator.ts");
   const { LEVELS } = await vite.ssrLoadModule("/src/game/levels.ts");
-  const { completeClientRecovery, failureCount, recordOutcome } =
+  const {
+    completeClientRecovery,
+    failureCount,
+    recordOutcome,
+    selectDifficulty,
+  } =
     await vite.ssrLoadModule("/src/game/campaign.ts");
 
   let campaign = { failures: {}, cooperations: 0, difficulty: 1 };
@@ -38,18 +43,50 @@ try {
   campaign = completeClientRecovery(campaign, LEVELS[1].id);
   assert.equal(campaign.difficulty, 3);
 
-  const humanRun = new LineSimulator(LEVELS[1], 2);
-  humanRun.start();
-  let humanSnapshot;
-  for (let elapsed = 0; elapsed < 19.5; elapsed += 0.1) {
-    humanSnapshot = humanRun.tick(0.1);
+  campaign = selectDifficulty(campaign, 1);
+  assert.equal(campaign.difficulty, 1);
+
+  const lowRun = new LineSimulator(LEVELS[0], 1);
+  lowRun.start();
+  let lowSnapshot;
+  for (let elapsed = 0; elapsed < 17.8; elapsed += 0.1) {
+    lowSnapshot = lowRun.tick(0.1);
   }
-  assert.match(humanSnapshot.alarm, /Human error/);
+  assert.match(lowSnapshot.alarm, /Human error/);
+  const force = LEVELS[0].controls.find((control) => control.key === "force");
+  assert.ok(force);
+  assert.notEqual(lowSnapshot.controls.force, force.ideal);
+  for (let elapsed = 0; elapsed < 3.6; elapsed += 0.1) {
+    lowSnapshot = lowRun.tick(0.1);
+  }
+  assert.equal(lowSnapshot.controls.force, force.ideal);
+  assert.ok(lowSnapshot.log.some((message) => message.includes("Auto Assist restored")));
+
+  const lowDisturbanceRun = new LineSimulator(LEVELS[1], 1);
+  lowDisturbanceRun.start();
+  let lowDisturbanceSnapshot;
+  for (let elapsed = 0; elapsed < 24.2; elapsed += 0.1) {
+    lowDisturbanceSnapshot = lowDisturbanceRun.tick(0.1);
+  }
   const tamp = LEVELS[1].controls.find((control) => control.key === "tamp");
   assert.ok(tamp);
+  assert.equal(lowDisturbanceSnapshot.controls.tamp, tamp.ideal);
+
+  const humanRun = new LineSimulator(LEVELS[0], 2);
+  humanRun.start();
+  let humanSnapshot;
+  for (let elapsed = 0; elapsed < 21.4; elapsed += 0.1) {
+    humanSnapshot = humanRun.tick(0.1);
+  }
+  assert.notEqual(humanSnapshot.controls.force, force.ideal);
   assert.equal(
-    Math.round((humanSnapshot.controls.tamp - tamp.min) / tamp.step),
-    (humanSnapshot.controls.tamp - tamp.min) / tamp.step,
+    Math.round((humanSnapshot.controls.force - force.min) / force.step),
+    (humanSnapshot.controls.force - force.min) / force.step,
+  );
+  assert.ok(
+    humanSnapshot.log.some((message) =>
+      message.includes("Manually restore Main compression"),
+    ),
   );
 
   const resilienceRun = new LineSimulator(LEVELS[0], 3);
@@ -70,7 +107,9 @@ try {
   }
   assert.equal(resilienceSnapshot.result.incidentsHandled, 2);
 
-  console.log("Smoke tests passed: campaign hold, client recovery, human error, power outage.");
+  console.log(
+    "Smoke tests passed: difficulty selection, Low auto-recovery, Medium manual recovery, High power outage.",
+  );
 } finally {
   await vite.close();
 }

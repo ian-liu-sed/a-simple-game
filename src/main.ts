@@ -8,6 +8,7 @@ import {
   failureCount,
   loadCampaign,
   recordOutcome,
+  selectDifficulty,
   type CampaignState,
 } from "./game/campaign";
 import {
@@ -201,6 +202,38 @@ function brandActions(extra?: string): string {
   </div>`;
 }
 
+function difficultySelectorHtml(compact = false): string {
+  const story = storyT();
+  const levels = [1, 2, 3] as const;
+  return `
+    <div class="difficulty-select${compact ? " compact" : ""}">
+      <span class="difficulty-select-label">${story.chooseDifficulty}</span>
+      <div class="difficulty-options" role="group" aria-label="${story.chooseDifficulty}">
+        ${levels
+          .map(
+            (level) => `
+            <button type="button" class="difficulty-option${campaign.difficulty === level ? " active" : ""}" data-select-difficulty="${level}" aria-pressed="${campaign.difficulty === level}">
+              <strong>${story.difficulty[level]}</strong>
+              <small>${story.difficultyDetail[level]}</small>
+            </button>`,
+          )
+          .join("")}
+      </div>
+    </div>`;
+}
+
+function bindDifficultySelector(): void {
+  document
+    .querySelectorAll<HTMLButtonElement>("[data-select-difficulty]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const difficulty = Number(button.dataset.selectDifficulty) as 1 | 2 | 3;
+        campaign = selectDifficulty(campaign, difficulty);
+        render();
+      });
+    });
+}
+
 function renderHome(): string {
   const ui = t();
   const story = storyT();
@@ -261,6 +294,7 @@ function renderHome(): string {
         <strong>${story.difficulty[campaign.difficulty]}</strong>
         <small>${story.difficultyDetail[campaign.difficulty]}</small>
       </div>
+      ${difficultySelectorHtml()}
       <div class="campaign-count">
         <span>${story.cooperation}</span>
         <strong>${campaign.cooperations}</strong>
@@ -287,6 +321,7 @@ function renderHome(): string {
 
 function bindHome(): void {
   bindLangSwitch(render);
+  bindDifficultySelector();
   document.getElementById("btn-start")?.addEventListener("click", () => openBrief(0));
   document.querySelectorAll<HTMLButtonElement>("[data-level]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -297,7 +332,6 @@ function bindHome(): void {
 
 function renderBrief(level: LevelDef): string {
   const ui = t();
-  const story = storyT();
   const gear = level.equipment
     .map((id) => {
       const e = equipT(id);
@@ -321,11 +355,7 @@ function renderBrief(level: LevelDef): string {
     <div class="panel">
       <p style="margin-top:0; line-height:1.55; color:var(--muted)">${level.briefing}</p>
       <p><strong>${ui.target}:</strong> ${level.targetUnits} ${ui.goodUnits} · <strong>${ui.shift}:</strong> ${level.durationSec}s · <strong>${ui.form}:</strong> ${productLabel(level.product)}</p>
-      <div class="difficulty-callout">
-        <span>${story.campaignStatus}</span>
-        <strong>${story.difficulty[campaign.difficulty]}</strong>
-        <small>${story.difficultyDetail[campaign.difficulty]}</small>
-      </div>
+      ${difficultySelectorHtml(true)}
       <h3 style="margin-bottom:6px">${ui.lineEquipment}</h3>
       <ul style="margin-top:0; color:var(--muted); line-height:1.55">${gear}</ul>
       <div class="station-row">
@@ -346,6 +376,7 @@ function renderBrief(level: LevelDef): string {
 
 function bindBrief(): void {
   bindLangSwitch(render);
+  bindDifficultySelector();
   document.getElementById("btn-back")?.addEventListener("click", goHome);
   document.getElementById("btn-back-2")?.addEventListener("click", goHome);
   document.getElementById("btn-run")?.addEventListener("click", startRun);
