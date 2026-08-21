@@ -34,7 +34,6 @@ export interface UiMessages {
   operatorTips: string;
   processControls: string;
   eventLog: string;
-  ideal: string;
   health: string;
   batchReport: string;
   released: string;
@@ -166,7 +165,6 @@ const en: Pack = {
     operatorTips: "Operator tips",
     processControls: "Process controls",
     eventLog: "Event log",
-    ideal: "ideal",
     health: "health",
     batchReport: "Batch report",
     released: "RELEASED — process capable",
@@ -500,7 +498,6 @@ const zh: Pack = {
     operatorTips: "操作提示",
     processControls: "工艺控制",
     eventLog: "事件日志",
-    ideal: "理想值",
     health: "健康度",
     batchReport: "批次报告",
     released: "放行 — 工艺能力达标",

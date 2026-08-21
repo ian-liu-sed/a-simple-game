@@ -405,7 +405,6 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
         <div class="control${needsAttention ? " attention" : ""}" data-control-key="${c.key}">
           <header>
             <span class="control-name">${c.label}<strong class="parameter-warning" data-parameter-warning="${c.key}" ${needsAttention ? "" : "hidden"}>${ui.adjustNow}</strong></span>
-            <span class="ideal">${ui.ideal} ${c.ideal}${c.unit} ±${c.tolerance}</span>
           </header>
           <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" />
           <div class="ideal"><span data-val="${c.key}">${formatVal(v, c.step)}</span> ${c.unit}</div>
