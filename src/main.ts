@@ -406,8 +406,12 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
           <header>
             <span class="control-name">${c.label}<strong class="parameter-warning" data-parameter-warning="${c.key}" ${needsAttention ? "" : "hidden"}>${ui.adjustNow}</strong></span>
           </header>
-          <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" />
-          <div class="ideal"><span data-val="${c.key}">${formatVal(v, c.step)}</span> ${c.unit}</div>
+          <div class="control-adjuster">
+            <button type="button" class="control-step" data-step-key="${c.key}" data-step-direction="down" aria-label="${ui.decrease} ${c.label}">−</button>
+            <input type="range" data-key="${c.key}" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" />
+            <button type="button" class="control-step" data-step-key="${c.key}" data-step-direction="up" aria-label="${ui.increase} ${c.label}">+</button>
+          </div>
+          <div class="control-value"><span data-val="${c.key}">${formatVal(v, c.step)}</span> ${c.unit}</div>
         </div>`;
     })
     .join("");
@@ -435,15 +439,15 @@ function renderPlay(level: LevelDef, s: SimSnapshot, tips: string[]): string {
 
     <div class="progress"><span id="m-bar" style="width:${pct}%"></span></div>
 
-    <div class="play-layout">
+    <div class="play-layout${level.controls.length >= 6 ? " full-line-layout" : ""}">
       <div class="panel">
         <div class="station-row" id="stations">${stations}</div>
         <p class="tips" id="alarm-text" aria-live="assertive">${s.alarm ? `<strong>${ui.alarm}:</strong> ${s.alarm}` : ui.lineNominal}</p>
         <div class="tips"><strong>${ui.operatorTips}</strong><br/>${tips.map((tip) => `• ${tip}`).join("<br/>")}</div>
       </div>
-      <div class="panel">
+      <div class="panel process-panel">
         <h3 style="margin-top:0">${ui.processControls}</h3>
-        <div class="controls" id="controls">${controls}</div>
+        <div class="controls${level.controls.length >= 6 ? " full-line-controls" : ""}" id="controls">${controls}</div>
         <h3>${ui.eventLog}</h3>
         <ul class="log" id="log">${s.log.map((l) => `<li>${l}</li>`).join("")}</ul>
       </div>
@@ -470,6 +474,19 @@ function bindPlay(): void {
       const label = document.querySelector(`[data-val="${key}"]`);
       const def = currentLevel().controls.find((c) => c.key === key);
       if (label && def) label.textContent = formatVal(value, def.step);
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-step-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.stepKey;
+      if (!key) return;
+      const input = document.querySelector<HTMLInputElement>(
+        `input[data-key="${key}"]`,
+      );
+      if (!input) return;
+      if (button.dataset.stepDirection === "up") input.stepUp();
+      else input.stepDown();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
     });
   });
 }

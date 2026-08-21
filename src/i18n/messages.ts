@@ -60,6 +60,8 @@ export interface UiMessages {
   statusAlarm: string;
   statusDone: string;
   adjustNow: string;
+  decrease: string;
+  increase: string;
 }
 
 export interface EquipMessages {
@@ -195,6 +197,8 @@ const en: Pack = {
     statusAlarm: "ALARM",
     statusDone: "DONE",
     adjustNow: "ADJUST NOW",
+    decrease: "Decrease",
+    increase: "Increase",
   },
   equipment: {
     "tablet-press": {
@@ -532,6 +536,8 @@ const zh: Pack = {
     statusAlarm: "报警",
     statusDone: "完成",
     adjustNow: "立即调整",
+    decrease: "减小",
+    increase: "增大",
   },
   equipment: {
     "tablet-press": {
