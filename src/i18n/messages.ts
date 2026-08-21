@@ -1,5 +1,6 @@
 import type { Lang } from "./locale";
 import type { DifficultyTier, EquipmentId } from "../game/types";
+import type { BadgeId } from "../game/badges";
 
 export interface UiMessages {
   tagline: string;
@@ -86,6 +87,13 @@ export interface StoryMessages {
   campaignStatus: string;
   cookieNotice: string;
   cooperation: string;
+  badgeCenterTitle: string;
+  badgeCenterLead: string;
+  badgeUnlocked: string;
+  badgeLocked: string;
+  badgeEarnedTitle: string;
+  missionBadgeTarget: string;
+  badges: Record<BadgeId, { name: string; criteria: string }>;
   activeHold: string;
   failureReminder: string;
   failureBody: (count: number, remaining: number) => string;
@@ -352,6 +360,51 @@ const en: Pack = {
     campaignStatus: "Operations campaign",
     cookieNotice: "Progress and one-hour mission holds are saved in a first-party cookie on this browser.",
     cooperation: "Client cooperations",
+    badgeCenterTitle: "Badge workshop",
+    badgeCenterLead:
+      "Badges demand stable production, not one lucky number. Review the exact criteria and build a stronger line.",
+    badgeUnlocked: "Unlocked",
+    badgeLocked: "Locked",
+    badgeEarnedTitle: "New badges earned",
+    missionBadgeTarget: "Mission badge target",
+    badges: {
+      "quality-guardian": {
+        name: "Quality Guardian",
+        criteria: "Pass any mission with at least 99.5% quality and 82% OEE.",
+      },
+      "oee-elite": {
+        name: "OEE Elite",
+        criteria: "Pass any mission with at least 93% OEE and 98.5% quality.",
+      },
+      "recovery-ace": {
+        name: "Recovery Ace",
+        criteria: "On Expert or Legend, pass after 3+ incidents with at least 78% OEE.",
+      },
+      "press-master": {
+        name: "Press Master",
+        criteria: "Level 1: pass with at least 99% quality and 88% OEE.",
+      },
+      "capsule-specialist": {
+        name: "Capsule Specialist",
+        criteria: "Level 2: pass with at least 99.5% quality and 90% OEE.",
+      },
+      "packaging-guardian": {
+        name: "Packaging Guardian",
+        criteria: "Level 3: pass with at least 98.5% quality and 87% OEE.",
+      },
+      "blister-specialist": {
+        name: "Blister Specialist",
+        criteria: "Level 4: pass with at least 99% quality and 89% OEE.",
+      },
+      "full-line-commander": {
+        name: "Full-Line Commander",
+        criteria: "Level 5 on Expert or Legend: pass with 98.5% quality and 86% OEE.",
+      },
+      "campaign-master": {
+        name: "Campaign Master",
+        criteria: "Unlock all five mission-specific badges.",
+      },
+    },
     activeHold: "LINE HOLD",
     failureReminder: "Production failure reminder",
     failureBody: (count, remaining) =>
@@ -695,6 +748,50 @@ const zh: Pack = {
     campaignStatus: "运营战役",
     cookieNotice: "游戏进度和一小时任务暂扣会保存在此浏览器的第一方 Cookie 中。",
     cooperation: "客户合作次数",
+    badgeCenterTitle: "徽章工坊",
+    badgeCenterLead: "徽章要求持续稳定生产，而不是一次幸运成绩。查看明确标准，逐步打造更强的产线。",
+    badgeUnlocked: "已解锁",
+    badgeLocked: "未解锁",
+    badgeEarnedTitle: "本次新获徽章",
+    missionBadgeTarget: "任务徽章标准",
+    badges: {
+      "quality-guardian": {
+        name: "质量守护者",
+        criteria: "任一任务通过，质量至少 99.5%，OEE 至少 82%。",
+      },
+      "oee-elite": {
+        name: "OEE 精英",
+        criteria: "任一任务通过，OEE 至少 93%，质量至少 98.5%。",
+      },
+      "recovery-ace": {
+        name: "恢复王牌",
+        criteria: "专家或传奇难度处理至少 3 次事件后通过，OEE 至少 78%。",
+      },
+      "press-master": {
+        name: "压片大师",
+        criteria: "第 1 关通过，质量至少 99%，OEE 至少 88%。",
+      },
+      "capsule-specialist": {
+        name: "胶囊专家",
+        criteria: "第 2 关通过，质量至少 99.5%，OEE 至少 90%。",
+      },
+      "packaging-guardian": {
+        name: "瓶装守卫",
+        criteria: "第 3 关通过，质量至少 98.5%，OEE 至少 87%。",
+      },
+      "blister-specialist": {
+        name: "泡罩专家",
+        criteria: "第 4 关通过，质量至少 99%，OEE 至少 89%。",
+      },
+      "full-line-commander": {
+        name: "全线指挥官",
+        criteria: "第 5 关专家或传奇难度通过，质量至少 98.5%，OEE 至少 86%。",
+      },
+      "campaign-master": {
+        name: "战役大师",
+        criteria: "解锁全部五枚任务专属徽章。",
+      },
+    },
     activeHold: "产线暂扣",
     failureReminder: "生产失败提醒",
     failureBody: (count, remaining) =>

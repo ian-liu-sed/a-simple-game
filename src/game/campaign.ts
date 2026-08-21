@@ -3,6 +3,7 @@ import type { DifficultyTier } from "./types";
 export interface CampaignState {
   failures: Record<string, number>;
   holds: Record<string, number>;
+  badges: Record<string, number>;
   cooperations: number;
   difficulty: DifficultyTier;
 }
@@ -17,12 +18,13 @@ const COOKIE_MAX_AGE_SECONDS = 90 * 24 * 60 * 60;
 const INITIAL_STATE: CampaignState = {
   failures: {},
   holds: {},
+  badges: {},
   cooperations: 0,
   difficulty: 1,
 };
 
 function freshState(): CampaignState {
-  return { ...INITIAL_STATE, failures: {}, holds: {} };
+  return { ...INITIAL_STATE, failures: {}, holds: {}, badges: {} };
 }
 
 function normalize(raw: Partial<CampaignState>): CampaignState {
@@ -41,7 +43,13 @@ function normalize(raw: Partial<CampaignState>): CampaignState {
     if (holdUntil > 0) holds[key] = holdUntil;
   }
 
-  return { failures, holds, cooperations, difficulty };
+  const badges: Record<string, number> = {};
+  for (const [key, value] of Object.entries(raw.badges ?? {})) {
+    const unlockedAt = Math.max(0, Number(value) || 0);
+    if (unlockedAt > 0) badges[key] = unlockedAt;
+  }
+
+  return { failures, holds, badges, cooperations, difficulty };
 }
 
 function readCookie(): string | null {
@@ -147,6 +155,19 @@ export function selectDifficulty(
   return next;
 }
 
+export function unlockBadges(
+  state: CampaignState,
+  badgeIds: Iterable<string>,
+  now = Date.now(),
+): CampaignState {
+  const next = normalize(state);
+  for (const badgeId of badgeIds) {
+    if (!next.badges[badgeId]) next.badges[badgeId] = now;
+  }
+  saveCampaign(next);
+  return next;
+}
+
 export function completeClientRecovery(
   state: CampaignState,
   levelId: string,
@@ -155,6 +176,7 @@ export function completeClientRecovery(
   const next: CampaignState = {
     failures: { ...state.failures, [levelId]: 0 },
     holds: { ...state.holds },
+    badges: { ...state.badges },
     cooperations,
     difficulty: Math.min(3, cooperations + 1) as DifficultyTier,
   };

@@ -12,6 +12,7 @@ Play as a line operator / plant engineer. Tune process parameters on tablet pres
 - Players can choose Assistant, Expert, or Legend difficulty. The selector describes each mode qualitatively without revealing how many incidents will occur. Higher modes add multi-parameter incidents, tighter recovery precision, and an unplanned power outage.
 - Mission reports show an immediate satisfied or disappointed client reaction based on the batch result.
 - Level 5 uses a wider, responsive control workspace with precise minus/plus stepping for its six full-line parameters.
+- A persistent nine-badge system publishes exact quality/OEE criteria, includes five mission-specific production badges, and celebrates new unlocks in the batch report.
 - Incident-shifted controls pulse red with an **ADJUST NOW** badge until the parameter returns to its validated window.
 - Successful client recovery recommends the next difficulty while keeping all three modes selectable.
 - Campaign progress, failure streaks, real hold deadlines, cooperation count, and difficulty persist in a 90-day first-party cookie; language and best scores remain local to the browser.

@@ -35,6 +35,7 @@ const vite = await createServer({
 try {
   const { LineSimulator } = await vite.ssrLoadModule("/src/game/simulator.ts");
   const { LEVELS } = await vite.ssrLoadModule("/src/game/levels.ts");
+  const { evaluateBadges } = await vite.ssrLoadModule("/src/game/badges.ts");
   const {
     HOLD_DURATION_MS,
     completeClientRecovery,
@@ -43,11 +44,18 @@ try {
     loadCampaign,
     recordOutcome,
     selectDifficulty,
+    unlockBadges,
   } =
     await vite.ssrLoadModule("/src/game/campaign.ts");
 
   const holdStartedAt = 1_800_000_000_000;
-  let campaign = { failures: {}, holds: {}, cooperations: 0, difficulty: 1 };
+  let campaign = {
+    failures: {},
+    holds: {},
+    badges: {},
+    cooperations: 0,
+    difficulty: 1,
+  };
   campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
   campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
   campaign = recordOutcome(campaign, LEVELS[0].id, false, holdStartedAt);
@@ -82,6 +90,31 @@ try {
 
   campaign = selectDifficulty(campaign, 1);
   assert.equal(campaign.difficulty, 1);
+
+  const badgeResult = {
+    produced: 1400,
+    rejected: 4,
+    downtimeSec: 3,
+    qualityPct: 99.7,
+    oeePct: 91.8,
+    score: 1200,
+    passed: true,
+    incidentsHandled: 2,
+  };
+  const earnedBadges = evaluateBadges(
+    LEVELS[1].id,
+    badgeResult,
+    1,
+    Object.keys(campaign.badges),
+  );
+  assert.deepEqual(earnedBadges, ["quality-guardian", "capsule-specialist"]);
+  campaign = unlockBadges(campaign, earnedBadges, holdStartedAt);
+  assert.equal(campaign.badges["quality-guardian"], holdStartedAt);
+  assert.equal(campaign.badges["capsule-specialist"], holdStartedAt);
+  assert.deepEqual(
+    evaluateBadges(LEVELS[1].id, badgeResult, 1, Object.keys(campaign.badges)),
+    [],
+  );
 
   const midpointRandom = () => 0.5;
 
@@ -217,7 +250,7 @@ try {
   assert.equal(resilienceSnapshot.result.incidentsHandled, 6);
 
   console.log(
-    "Smoke tests passed: cookie-backed one-hour holds, randomized incidents, precision recovery, Auto Assist, and Legend outage.",
+    "Smoke tests passed: badge criteria/persistence, cookie holds, randomized incidents, precision recovery, and Legend outage.",
   );
 } finally {
   await vite.close();

@@ -2,6 +2,13 @@ import "./style.css";
 import { LEVELS } from "./game/levels";
 import { LineSimulator } from "./game/simulator";
 import { equipmentCardHtml, heroLineHtml } from "./game/art";
+import {
+  BADGES,
+  evaluateBadges,
+  missionBadge,
+  type BadgeDefinition,
+  type BadgeId,
+} from "./game/badges";
 import type { LevelDef, SimSnapshot } from "./game/types";
 import {
   HOLD_DURATION_MS,
@@ -12,6 +19,7 @@ import {
   loadCampaign,
   recordOutcome,
   selectDifficulty,
+  unlockBadges,
   type CampaignState,
 } from "./game/campaign";
 import {
@@ -55,6 +63,7 @@ let negotiationTrust = 45;
 let negotiationChoice: number | null = null;
 let clientRecoverySucceeded = false;
 let holdClockTimer = 0;
+let recentBadgeIds: BadgeId[] = [];
 
 applyDocumentLang();
 
@@ -115,6 +124,7 @@ function startRun(): void {
     return;
   }
   const level = currentLevel();
+  recentBadgeIds = [];
   sim = new LineSimulator(level, campaign.difficulty);
   snap = sim.tick(0);
   sim.start();
@@ -147,11 +157,18 @@ function loop(ts: number): void {
   patchPlay(snap);
   if (snap.finished && snap.result) {
     saveBest(LEVELS[levelIndex].id, snap.result.score);
+    recentBadgeIds = evaluateBadges(
+      LEVELS[levelIndex].id,
+      snap.result,
+      campaign.difficulty,
+      Object.keys(campaign.badges),
+    );
     campaign = recordOutcome(
       campaign,
       LEVELS[levelIndex].id,
       snap.result.passed,
     );
+    campaign = unlockBadges(campaign, recentBadgeIds);
     stopLoop();
     screen = "result";
     render();
@@ -240,7 +257,36 @@ function bindDifficultySelector(): void {
         campaign = selectDifficulty(campaign, difficulty);
         render();
       });
-    });
+  });
+}
+
+function badgeCardHtml(
+  badge: BadgeDefinition,
+  options: { compact?: boolean; newlyEarned?: boolean } = {},
+): string {
+  const story = storyT();
+  const copy = story.badges[badge.id];
+  const unlocked = Boolean(campaign.badges[badge.id]);
+  return `
+    <article class="badge-card${unlocked ? " unlocked" : " locked"}${options.compact ? " compact" : ""}${options.newlyEarned ? " newly-earned" : ""}">
+      <div class="badge-emblem" aria-hidden="true">${badge.icon}</div>
+      <div class="badge-copy">
+        <span>${unlocked ? story.badgeUnlocked : story.badgeLocked}</span>
+        <strong>${copy.name}</strong>
+        <p>${copy.criteria}</p>
+      </div>
+    </article>`;
+}
+
+function missionBadgeTargetHtml(levelId: string): string {
+  const story = storyT();
+  const badge = missionBadge(levelId);
+  if (!badge) return "";
+  return `
+    <section class="mission-badge-target">
+      <span>${story.missionBadgeTarget}</span>
+      ${badgeCardHtml(badge, { compact: true })}
+    </section>`;
 }
 
 function renderHome(): string {
@@ -260,6 +306,10 @@ function renderHome(): string {
         <p>${level.subtitle}</p>
       </button>`;
   }).join("");
+  const badgeCards = BADGES.map((badge) => badgeCardHtml(badge)).join("");
+  const unlockedBadgeCount = BADGES.filter(
+    (badge) => campaign.badges[badge.id],
+  ).length;
 
   return `
   <div class="screen">
@@ -309,6 +359,18 @@ function renderHome(): string {
         <span>${story.cooperation}</span>
         <strong>${campaign.cooperations}</strong>
       </div>
+    </section>
+
+    <section class="badge-center panel">
+      <div class="badge-center-heading">
+        <div>
+          <span class="eyebrow">${story.badgeCenterTitle}</span>
+          <h2>${story.badgeCenterTitle}</h2>
+          <p>${story.badgeCenterLead}</p>
+        </div>
+        <strong>${unlockedBadgeCount}/${BADGES.length}</strong>
+      </div>
+      <div class="badge-grid">${badgeCards}</div>
     </section>
 
     <section class="line-stations panel">
@@ -365,6 +427,7 @@ function renderBrief(level: LevelDef): string {
     <div class="panel">
       <p style="margin-top:0; line-height:1.55; color:var(--muted)">${level.briefing}</p>
       <p><strong>${ui.target}:</strong> ${level.targetUnits} ${ui.goodUnits} · <strong>${ui.shift}:</strong> ${level.durationSec}s · <strong>${ui.form}:</strong> ${productLabel(level.product)}</p>
+      ${missionBadgeTargetHtml(LEVELS[levelIndex].id)}
       ${difficultySelectorHtml(true)}
       <h3 style="margin-bottom:6px">${ui.lineEquipment}</h3>
       <ul style="margin-top:0; color:var(--muted); line-height:1.55">${gear}</ul>
@@ -558,6 +621,16 @@ function renderResult(level: LevelDef, s: SimSnapshot): string {
   const r = s.result!;
   const failures = currentFailureCount();
   const remaining = Math.max(0, HOLD_THRESHOLD - failures);
+  const earnedBadgeCards = BADGES.filter((badge) =>
+    recentBadgeIds.includes(badge.id),
+  )
+    .map((badge) =>
+      badgeCardHtml(badge, { compact: true, newlyEarned: true }),
+    )
+    .join("");
+  const earnedBadges = earnedBadgeCards
+    ? `<section class="badge-earned" role="status"><h3>${story.badgeEarnedTitle}</h3><div class="badge-grid compact">${earnedBadgeCards}</div></section>`
+    : "";
   const failureReminder = r.passed
     ? ""
     : `<div class="failure-reminder${remaining === 0 ? " hold" : ""}" role="alert">
@@ -603,6 +676,8 @@ function renderResult(level: LevelDef, s: SimSnapshot): string {
           <div class="metric"><div class="label">${story.incidentsHandled}</div><div class="value">${r.incidentsHandled}</div></div>
         </div>
       </div>
+      ${missionBadgeTargetHtml(LEVELS[levelIndex].id)}
+      ${earnedBadges}
       ${failureReminder}
       <div class="actions" style="margin-top:14px">
         <button class="btn-primary" id="btn-retry">${lineIsHeld() ? story.enterHold : ui.retry}</button>
